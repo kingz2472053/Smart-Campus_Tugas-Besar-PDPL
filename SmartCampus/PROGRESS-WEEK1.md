@@ -232,7 +232,7 @@ Menggunakan **Abstract Factory Pattern** (`UserFactoryManager`) untuk membuat da
 - 3 Dosen: Dr. Budi, Dr. Sari, Prof. Ahmad
 - 5 Mahasiswa: Francisco, Teofilus, Calvin, Dave, Andi (sesuai anggota kelompok)
 
-Semua password: `password` (di-hash otomatis oleh Laravel)
+Semua password: `password` (di-hash otomatis oleh Laravel)pull 
 
 ---
 
@@ -329,3 +329,363 @@ SmartCampus/
 - [ ] Halaman Activity Log lengkap (filter user, aksi, tanggal) — Fitur 7
 - [ ] Polish OTP flow end-to-end — Fitur 12
 - [ ] Integrasi dengan fitur anggota lain
+
+---
+---
+
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+<!-- FITUR MANAJEMEN TUGAS (CRUD) — Dibuat oleh Teofilus Juan Puapadang (2472053) -->
+<!-- Branch: Week--1-1---Teofilus Juan Puapadang                                 -->
+<!-- ══════════════════════════════════════════════════════════════════════════════ -->
+
+# PROGRESS — Fitur Manajemen Tugas (CRUD)
+**Dibuat oleh:** Teofilus Juan Puapadang (2472053)  
+**Branch:** `Week--1-1---Teofilus Juan Puapadang`  
+**Tanggal:** 9 Mei 2026  
+
+---
+
+## 1. Gambaran Umum Fitur
+
+Fitur **Manajemen Tugas (CRUD)** memungkinkan dosen untuk membuat, melihat, mengedit, dan menghapus tugas perkuliahan. Fitur ini dibangun menggunakan **Command Pattern** sebagai pola desain utama untuk mengenkapsulasi setiap operasi CRUD menjadi objek command yang independen.
+
+### Apa yang bisa dilakukan:
+- **Dosen:** Membuat tugas baru, melihat detail tugas + daftar submission mahasiswa, mengedit tugas, dan menghapus tugas (Full CRUD)
+- **Mahasiswa:** Melihat daftar tugas dari mata kuliah yang di-enroll, melihat detail tugas, dan mengumpulkan file tugas (submission)
+- **Admin:** Melihat semua tugas dari seluruh mata kuliah (read-only)
+
+---
+
+## 2. Design Pattern — Command Pattern (Fitur: Manajemen Tugas)
+
+Mengimplementasikan **Command Pattern** untuk operasi CRUD pada tugas/assignment.
+
+### Mengapa Command Pattern?
+- **Enkapsulasi:** Setiap operasi (Create/Edit/Delete) dibungkus menjadi objek command tersendiri
+- **Audit Trail:** Invoker secara otomatis mencatat setiap operasi ke `ActivityLogger` (Singleton)
+- **Undo/Redo Ready:** Setiap command menyimpan data sebelum/sesudah perubahan (snapshot)
+- **Single Responsibility:** Controller tidak perlu menangani logika bisnis dan logging secara langsung
+
+### Struktur Kelas Command Pattern:
+```
+TaskCommandInterface (Interface)
+    │
+    ├── CreateTaskCommand    → Enkapsulasi operasi CREATE assignment
+    ├── EditTaskCommand      → Enkapsulasi operasi UPDATE assignment (+ snapshot before/after)
+    └── DeleteTaskCommand    → Enkapsulasi operasi DELETE assignment (+ snapshot preservation)
+
+TaskCommandInvoker (Invoker)
+    └── Menjalankan command + mencatat ke ActivityLogger (Singleton) secara otomatis
+
+AssignmentController (Client)
+    └── Membuat command objects dan mengirim ke Invoker
+```
+
+### File yang dibuat:
+- `app/Contracts/TaskCommandInterface.php` — Interface dengan 5 method kontrak
+- `app/Services/Task/CreateTaskCommand.php` — Concrete command untuk membuat tugas
+- `app/Services/Task/EditTaskCommand.php` — Concrete command untuk mengedit tugas
+- `app/Services/Task/DeleteTaskCommand.php` — Concrete command untuk menghapus tugas
+- `app/Services/Task/TaskCommandInvoker.php` — Invoker yang menjalankan command + logging
+
+### Interface TaskCommandInterface:
+```php
+interface TaskCommandInterface
+{
+    public function execute(): mixed;        // Menjalankan operasi CRUD
+    public function getAction(): string;     // Nama aksi: CREATE/UPDATE/DELETE
+    public function getDetail(): array;      // Data audit trail (before/after)
+    public function getTargetTable(): string; // Tabel target: 'assignments'
+    public function getTargetId(): ?int;     // ID record yang dioperasikan
+}
+```
+
+### Cara kerja Command Pattern di Controller:
+
+**CREATE — Membuat tugas baru:**
+```php
+// 1. Buat command object dengan data tervalidasi
+$command = new CreateTaskCommand($validated);
+
+// 2. Kirim ke Invoker → eksekusi + logging otomatis
+$assignment = $this->invoker->execute($command, Auth::id());
+```
+
+**EDIT — Mengedit tugas:**
+```php
+// 1. Buat command (otomatis menyimpan snapshot data sebelum perubahan)
+$command = new EditTaskCommand($assignment, $validated);
+
+// 2. Kirim ke Invoker → update + simpan data before/after ke log
+$this->invoker->execute($command, Auth::id());
+```
+
+**DELETE — Menghapus tugas:**
+```php
+// 1. Buat command (otomatis menyimpan snapshot lengkap sebelum hapus)
+$command = new DeleteTaskCommand($assignment);
+
+// 2. Kirim ke Invoker → hapus + simpan snapshot ke log
+$this->invoker->execute($command, Auth::id());
+```
+
+### Integrasi dengan Singleton Pattern (ActivityLogger):
+Setiap kali Invoker menjalankan command, aktivitas dicatat otomatis:
+```php
+// Di dalam TaskCommandInvoker::execute()
+ActivityLogger::getInstance()->log(
+    action: $command->getAction(),       // 'CREATE_ASSIGNMENT', 'UPDATE_ASSIGNMENT', 'DELETE_ASSIGNMENT'
+    userId: $userId,
+    targetTable: $command->getTargetTable(), // 'assignments'
+    targetId: $command->getTargetId(),
+    detail: $command->getDetail()         // Data snapshot untuk audit trail
+);
+```
+
+---
+
+## 3. Controller & Routing
+
+### AssignmentController (`app/Http/Controllers/AssignmentController.php`)
+Controller ini bertindak sebagai **Client** dalam Command Pattern:
+- `index()` — Menampilkan daftar tugas (dengan search & filter, role-aware)
+- `show()` — Menampilkan detail tugas + daftar submission mahasiswa
+- `create()` — Menampilkan form pembuatan tugas baru
+- `store()` — Menyimpan tugas baru menggunakan `CreateTaskCommand`
+- `edit()` — Menampilkan form edit tugas
+- `update()` — Mengupdate tugas menggunakan `EditTaskCommand`
+- `destroy()` — Menghapus tugas menggunakan `DeleteTaskCommand`
+
+### SubmissionController (`app/Http/Controllers/SubmissionController.php`)
+- `store()` — Menerima file submission dari mahasiswa
+- Validasi format file dan ukuran sesuai pengaturan tugas
+- Otomatis menentukan status: `submitted` (tepat waktu) atau `late` (terlambat)
+
+### Routes (`routes/web.php`):
+```php
+// Dosen — Full CRUD
+Route::prefix('dosen')->middleware('role:dosen')->group(function () {
+    Route::resource('assignments', AssignmentController::class);
+});
+
+// Mahasiswa — Read + Submit
+Route::prefix('mahasiswa')->middleware('role:mahasiswa')->group(function () {
+    Route::get('assignments', [AssignmentController::class, 'index']);
+    Route::get('assignments/{assignment}', [AssignmentController::class, 'show']);
+    Route::post('assignments/{assignment}/submit', [SubmissionController::class, 'store']);
+});
+
+// Admin — Read only
+Route::prefix('admin')->middleware('role:admin')->group(function () {
+    Route::get('assignments', [AssignmentController::class, 'index']);
+    Route::get('assignments/{assignment}', [AssignmentController::class, 'show']);
+});
+```
+
+---
+
+## 4. Views (Blade Templates)
+
+### Halaman yang dibuat:
+| File | Deskripsi |
+|------|-----------|
+| `resources/views/assignments/index.blade.php` | Daftar tugas dengan search, filter MK, filter status deadline |
+| `resources/views/assignments/show.blade.php` | Detail tugas + tabel submission mahasiswa + form upload (mahasiswa) |
+| `resources/views/assignments/create.blade.php` | Form buat tugas baru (dropdown MK, judul, deskripsi, deadline, skor, format file) |
+| `resources/views/assignments/edit.blade.php` | Form edit tugas (pre-filled dengan data existing) |
+
+### Fitur UI:
+- **Badge Status Deadline:** 🟢 Aktif (>3 hari), 🟡 Mendekati (≤3 hari), 🔴 Terlambat (lewat deadline)
+- **Search & Filter:** Cari judul tugas, filter berdasarkan mata kuliah, filter status deadline
+- **Modal Konfirmasi Hapus:** Konfirmasi sebelum menghapus tugas
+- **Validasi Error:** Pesan error ditampilkan langsung di form
+- **Role-aware:** Tombol CRUD hanya muncul untuk dosen, mahasiswa hanya bisa lihat & submit
+
+### Layout Sidebar (Modifikasi):
+File `resources/views/layouts/app.blade.php` dimodifikasi untuk menambahkan navigasi:
+- **Dosen:** Dashboard, Kelola Tugas, Penilaian, Monitor Mahasiswa, Export Laporan
+- **Mahasiswa:** Dashboard, Tugas Saya, Nilai Saya
+- **Admin:** Dashboard, Semua Tugas, Manajemen User, Laporan Aktivitas
+
+---
+
+## 5. Clean Code & Defensive Programming
+
+### Guard Clauses yang diterapkan:
+```php
+// Hanya pemilik tugas yang bisa edit/hapus
+private function authorizeOwnership($user, Assignment $assignment): void
+{
+    if ($assignment->created_by !== $user->id) {
+        abort(403, 'Anda tidak memiliki akses untuk mengelola tugas ini.');
+    }
+}
+
+// Mahasiswa hanya bisa akses tugas dari enrolled courses
+private function authorizeStudentAccess($user, Assignment $assignment): void
+{
+    $isEnrolled = $user->student->enrollments()
+        ->where('course_id', $assignment->course_id)
+        ->where('status', 'active')
+        ->exists();
+
+    if (!$isEnrolled) {
+        abort(403, 'Anda tidak terdaftar di mata kuliah ini.');
+    }
+}
+```
+
+### DRY Principle:
+- Method `validateAssignment()` dipakai bersama oleh `store()` dan `update()`
+- Method `applyRoleFilter()` memisahkan logika query per role
+- Method `getCoursesForUser()` dan `getDosenCourses()` untuk reusable query
+
+---
+
+## 6. Database Seeder (Update)
+
+**File:** `database/seeders/SmartCampusSeeder.php`
+
+### Data yang ditambahkan:
+
+**7 Dosen (1 dosen = 1 mata kuliah):**
+| Dosen | Email | Mata Kuliah | Kode |
+|-------|-------|-------------|------|
+| Dr. Budi Santoso | budi@smartcampus.ac.id | Pola Desain Perangkat Lunak | IN235 |
+| Dr. Sari Dewi | sari@smartcampus.ac.id | Web Dasar | IN212 |
+| Prof. Ahmad Wijaya | ahmad@smartcampus.ac.id | Pancasila | MK017 |
+| Dr. Dewi Lestari | dewi@smartcampus.ac.id | Statistika | IN241 |
+| Dr. Rizki Ramadhan | rizki@smartcampus.ac.id | Kecerdasan Mesin | IN242 |
+| Dr. Maya Putri | maya@smartcampus.ac.id | Proyek Perangkat Lunak | IN254 |
+| Dr. Hendra Kusuma | hendra@smartcampus.ac.id | Strategi Algoritmik | IN244 |
+
+**8 Tugas (variasi deadline):**
+| No | Judul Tugas | Mata Kuliah | Status |
+|----|-------------|-------------|--------|
+| 1 | Implementasi Singleton Pattern | IN235 PDPL | 🔴 Terlambat |
+| 2 | Landing Page dengan HTML & CSS | IN212 Web Dasar | 🔴 Terlambat |
+| 3 | Command Pattern pada CRUD System | IN235 PDPL | 🟡 Mendekati |
+| 4 | Implementasi Linear Regression | IN242 Kecerdasan Mesin | 🟡 Mendekati |
+| 5 | Tugas Besar: Smart Campus | IN235 PDPL | 🟢 Aktif |
+| 6 | Analisis Data Deskriptif | IN241 Statistika | 🟢 Aktif |
+| 7 | Dynamic Programming - Knapsack | IN244 Strategi Algoritmik | 🟢 Aktif |
+| 8 | Proposal Proyek Perangkat Lunak | IN254 Proyek PL | 🟢 Aktif |
+
+**8 Dummy Submissions:**
+- Tugas 1 (Singleton): 3 submission (Francisco ✅, Juan ✅, Calvin 🔴 Late)
+- Tugas 2 (Landing Page): 2 submission (Juan ✅, Andi 🔴 Late)
+- Tugas 3 (Command Pattern): 2 submission (Francisco ✅, Juan ✅)
+- Tugas 5 (Smart Campus): 1 submission (Juan ✅)
+
+**Password semua akun:** `password`
+
+---
+
+## 7. Alur Penggunaan Fitur
+
+### Alur Dosen — Buat Tugas Baru:
+```
+Login (budi@smartcampus.ac.id)
+  → Dashboard Dosen (lihat statistik MK & tugas)
+  → Klik "Kelola Tugas" di sidebar
+  → Halaman Daftar Tugas (filter & search)
+  → Klik "+ Buat Tugas Baru"
+  → Isi form (Mata Kuliah, Judul, Deskripsi, Deadline, Skor, Format File, Ukuran Maks)
+  → Klik "Simpan Tugas"
+  → [CreateTaskCommand dieksekusi via Invoker + logging otomatis]
+  → Redirect ke halaman Detail Tugas + pesan sukses
+```
+
+### Alur Dosen — Edit Tugas:
+```
+Halaman Daftar Tugas
+  → Klik ikon ✏️ Edit pada tugas yang diinginkan
+  → Form edit tampil (pre-filled dengan data existing)
+  → Ubah data yang diinginkan
+  → Klik "Perbarui Tugas"
+  → [EditTaskCommand dieksekusi via Invoker + snapshot before/after]
+  → Redirect ke Detail Tugas + pesan sukses
+```
+
+### Alur Dosen — Hapus Tugas:
+```
+Halaman Daftar Tugas
+  → Klik ikon 🗑️ Hapus pada tugas
+  → Modal konfirmasi muncul: "Apakah Anda yakin?"
+  → Klik "Hapus"
+  → [DeleteTaskCommand dieksekusi via Invoker + snapshot preservation]
+  → Redirect ke Daftar Tugas + pesan sukses
+```
+
+### Alur Mahasiswa — Lihat & Submit Tugas:
+```
+Login (juan@student.ac.id)
+  → Dashboard Mahasiswa
+  → Klik "Tugas Saya" di sidebar
+  → Daftar tugas dari mata kuliah yang di-enroll
+  → Klik judul tugas untuk lihat detail
+  → Upload file tugas (validasi format & ukuran)
+  → Status: "Submitted" (tepat waktu) atau "Late" (terlambat)
+```
+
+---
+
+## 8. Struktur File yang Dibuat/Dimodifikasi
+
+```
+SmartCampus/
+├── app/
+│   ├── Contracts/
+│   │   └── TaskCommandInterface.php              [NEW] Command Pattern Interface
+│   │
+│   ├── Http/Controllers/
+│   │   ├── AssignmentController.php              [NEW] CRUD + Command Pattern Client
+│   │   └── SubmissionController.php              [NEW] File submission handling
+│   │
+│   └── Services/Task/
+│       ├── CreateTaskCommand.php                 [NEW] Concrete Command — Create
+│       ├── EditTaskCommand.php                   [NEW] Concrete Command — Edit
+│       ├── DeleteTaskCommand.php                 [NEW] Concrete Command — Delete
+│       └── TaskCommandInvoker.php                [NEW] Invoker + ActivityLogger
+│
+├── database/seeders/
+│   └── SmartCampusSeeder.php                     [MODIFIED] +7 courses, +4 dosen, +8 assignments, +8 submissions
+│
+├── resources/views/
+│   ├── layouts/
+│   │   └── app.blade.php                         [MODIFIED] +sidebar navigasi per role
+│   └── assignments/
+│       ├── index.blade.php                       [NEW] Daftar tugas + search + filter
+│       ├── show.blade.php                        [NEW] Detail tugas + submission table
+│       ├── create.blade.php                      [NEW] Form buat tugas baru
+│       └── edit.blade.php                        [NEW] Form edit tugas
+│
+└── routes/
+    └── web.php                                   [MODIFIED] +routes CRUD assignment & submission
+```
+
+---
+
+## 9. Testing & Verifikasi
+
+- ✅ `php artisan migrate:fresh --seed` — 14 tabel berhasil, 13 akun + 7 courses + 8 tugas + 8 submissions
+- ✅ Login sebagai Dosen (`budi@smartcampus.ac.id`) — Dashboard menampilkan 1 MK diampu, 3 tugas
+- ✅ Halaman Kelola Tugas — Menampilkan 3 tugas milik Dr. Budi dengan badge status benar
+- ✅ Detail Tugas — Menampilkan 3 submission mahasiswa (Francisco, Juan, Calvin)
+- ✅ Form Buat Tugas Baru — Dropdown hanya 1 MK: IN235 Pola Desain Perangkat Lunak
+- ✅ Command Pattern berjalan — `CreateTaskCommand`, `EditTaskCommand`, `DeleteTaskCommand` terintegrasi
+- ✅ ActivityLogger mencatat semua operasi CRUD secara otomatis via Invoker
+- ✅ Guard Clauses — Dosen hanya bisa kelola tugas miliknya, mahasiswa hanya lihat enrolled courses
+- ✅ Tidak ada error pada semua halaman yang diuji
+
+---
+
+## 10. Ringkasan Design Pattern yang Digunakan
+
+| Design Pattern | Komponen | Fungsi |
+|----------------|----------|--------|
+| **Command Pattern** | `CreateTaskCommand`, `EditTaskCommand`, `DeleteTaskCommand`, `TaskCommandInvoker` | Mengenkapsulasi operasi CRUD sebagai objek command |
+| **Singleton Pattern** | `ActivityLogger` | Pencatatan aktivitas terpusat (digunakan oleh Invoker) |
+| **Abstract Factory** | `UserFactoryManager` | Pembuatan akun dosen (7 dosen) melalui `LecturerFactory` |
+
+---
