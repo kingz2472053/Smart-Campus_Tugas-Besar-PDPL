@@ -1,0 +1,1546 @@
+================================================================================
+       RANGKUMAN DETAIL DESAIN PERANGKAT LUNAK — SMARTCAMPUS
+       Sistem Manajemen Tugas dan Proyek Mahasiswa
+       Mata Kuliah: Pola Desain Perangkat Lunak
+================================================================================
+
+Anggota Kelompok:
+  - 2472040 / Francisco Valentino
+  - 2472053 / Teofilus Juan Puapadang
+  - 2272017 / Calvin Yohanis
+  - 2172015 / Dave Andrew
+
+================================================================================
+DAFTAR ISI RANGKUMAN
+================================================================================
+  1. Gambaran Umum Sistem
+  2. Detail 12 Fitur Utama
+  3. Activity Diagram (12 Alur)
+  4. Use Case Diagram
+  5. Entity Relationship Diagram (ERD)
+  6. Class Diagram
+  7. Design Pattern yang Diimplementasikan (8 Pattern + 1 Pendukung)
+  8. Konsep Clean Code yang Diterapkan
+  9. Hubungan Antar Komponen
+
+================================================================================
+BAGIAN 1: GAMBARAN UMUM SISTEM
+================================================================================
+
+SmartCampus adalah sistem manajemen tugas dan proyek mahasiswa yang dirancang
+untuk membantu tiga kelompok pengguna utama:
+  1. Mahasiswa    — mengumpulkan tugas, memantau progress, mendaftar MK
+  2. Dosen        — membuat dan mengelola tugas, menilai submission mahasiswa
+  3. Admin        — mengelola akun pengguna, enrollment, data MK, dan log sistem
+
+Sistem ini dikembangkan dengan menerapkan prinsip-prinsip Object-Oriented
+Design (OOD), SOLID Principles, dan Design Patterns agar sistem bersifat
+modular, extensible, maintainable, dan mudah diuji.
+
+Berdasarkan jumlah anggota kelompok (4 orang), sistem memiliki:
+  - 12 fitur utama (4 orang × 3 fitur/orang = 12 fitur)
+  - Minimal 8 design pattern (melebihi persyaratan minimal 4 pattern)
+  - 12 activity diagram (satu per fitur)
+  - 1 use case diagram utama beserta beberapa sub-use case
+  - 1 ERD dengan 12 entitas utama
+  - 1 class diagram dengan 47+ kelas terorganisir dalam 9 layer
+
+================================================================================
+BAGIAN 2: DETAIL 12 FITUR UTAMA
+================================================================================
+
+Berikut adalah penjelasan detail masing-masing dari 12 fitur sistem SmartCampus
+beserta aktor yang terlibat dan design pattern yang digunakan:
+
+------------------------------------------------------------------------
+FITUR 1: Login & Role Management
+------------------------------------------------------------------------
+Aktor         : Semua Pengguna (Mahasiswa, Dosen, Admin)
+Design Pattern: Abstract Factory + Decorator Pattern
+Deskripsi     :
+  Pengguna masuk ke sistem sesuai perannya masing-masing. Sistem memvalidasi
+  kredensial username dan password melalui BasicAuth. Jika fitur OTP aktif
+  pada akun tersebut, sistem membangkitkan dan mengirimkan kode OTP melalui
+  OTPDecorator. Setelah autentikasi berhasil, UserFactory menentukan role
+  pengguna (Mahasiswa, Dosen, atau Admin) dan memuat hak akses yang sesuai.
+  ActivityLogger mencatat setiap aktivitas login ke tabel ACTIVITY_LOG.
+Komponen Kelas:
+  - BasicAuth         : validasi username + password
+  - OTPDecorator      : menambahkan layer verifikasi OTP secara dinamis
+  - UserFactory       : abstract factory penentu role
+  - StudentFactory    : membuat objek Student
+  - LecturerFactory   : membuat objek Lecturer
+  - AdminFactory      : membuat objek Admin
+  - ActivityLogger    : mencatat aktivitas login (Singleton)
+
+------------------------------------------------------------------------
+FITUR 2: Manajemen Tugas (CRUD)
+------------------------------------------------------------------------
+Aktor         : Dosen
+Design Pattern: Command Pattern
+Deskripsi     :
+  Dosen dapat membuat tugas baru (Create), mengubah data tugas yang ada
+  (Update), dan menghapus tugas (Delete). Setiap aksi dikapsulasi sebagai
+  objek Command yang dieksekusi oleh CommandManager. CommandManager menyimpan
+  riwayat aksi dalam undoStack dan redoStack. Jika deadline berubah,
+  Assignment.notifyObservers() otomatis mengirimkan notifikasi ke mahasiswa
+  yang terdaftar. ActivityLogger mencatat setiap aksi ke ACTIVITY_LOG.
+Komponen Kelas:
+  - CreateTaskCommand : command untuk membuat tugas baru
+  - EditTaskCommand   : command untuk mengubah tugas (simpan oldData/newData)
+  - DeleteTaskCommand : command untuk menghapus tugas
+  - CommandManager    : eksekusi command dan kelola undo/redo stack
+  - Assignment        : entitas tugas sekaligus Subject dalam Observer Pattern
+
+------------------------------------------------------------------------
+FITUR 3: Deadline Reminder Otomatis
+------------------------------------------------------------------------
+Aktor         : Sistem / Mahasiswa
+Design Pattern: Observer Pattern
+Deskripsi     :
+  Setiap mahasiswa yang terdaftar pada mata kuliah secara otomatis menjadi
+  Observer dari setiap Assignment di mata kuliah tersebut. Ketika dosen
+  mengubah deadline tugas, Assignment.setDeadline() memicu notifyObservers().
+  Setiap DeadlineNotifier (observer) menerima update(task) dan memanggil
+  NotifFactory untuk membuat notifikasi. Notifikasi dikirim melalui dua
+  channel: Email (EmailNotification.send()) dan Dashboard
+  (DashboardNotification.send()). Data notifikasi disimpan ke tabel
+  NOTIFICATION. ActivityLogger mencatat perubahan deadline.
+Komponen Kelas:
+  - Assignment        : Subject dalam Observer Pattern
+  - TaskObserver      : interface observer
+  - DeadlineNotifier  : concrete observer, menerima update dan kirim notif
+  - NotifFactory      : factory method untuk membuat notifikasi
+  - EmailNotification : kirim notifikasi via email
+  - DashboardNotification : kirim notifikasi via dashboard
+
+------------------------------------------------------------------------
+FITUR 4: Tracking Progress Tugas
+------------------------------------------------------------------------
+Aktor         : Mahasiswa
+Design Pattern: State Pattern
+Deskripsi     :
+  Status pengerjaan tugas mahasiswa direpresentasikan melalui tiga State
+  konkret. Mahasiswa memilih status baru melalui antarmuka, dan
+  SubmissionContext.setState(newState) memvalidasi apakah transisi state
+  tersebut valid. State yang valid disimpan ke kolom progress di tabel
+  SUBMISSION. ActivityLogger mencatat perubahan progress. Sistem mengirim
+  notifikasi ke Dosen jika status berubah menjadi Completed.
+
+  Alur State:
+    NotStartedState --> OnProgressState --> CompletedState
+
+  Setiap state memiliki perilaku berbeda:
+    - NotStartedState  : mengizinkan upload file pertama
+    - OnProgressState  : mengizinkan penggantian file tugas
+    - CompletedState   : hanya mengizinkan melihat submission, tidak bisa edit
+
+Komponen Kelas:
+  - SubmissionState    : interface state
+  - NotStartedState    : state awal
+  - OnProgressState    : state saat mengerjakan
+  - CompletedState     : state akhir setelah submit
+  - SubmissionContext  : context yang mengelola transisi state
+
+------------------------------------------------------------------------
+FITUR 5: Sistem Penilaian Otomatis
+------------------------------------------------------------------------
+Aktor         : Dosen
+Design Pattern: Strategy Pattern
+Deskripsi     :
+  Dosen memilih metode penilaian saat akan menilai submission mahasiswa.
+  GradeService.setStrategy(strategy) mengatur metode yang dipilih secara
+  runtime. Dosen memasukkan nilai mentah (raw score), lalu
+  GradeService.executeGrading(rawScore) menghitung hasil sesuai strategi
+  yang aktif. Dosen mengkonfirmasi hasil sebelum disimpan ke tabel GRADE.
+  ActivityLogger mencatat aktivitas penilaian. Notifikasi nilai dikirim ke
+  mahasiswa via NotifFactory.
+
+  Tiga metode penilaian tersedia:
+    - NumericGrading   : nilai angka (0-100)
+    - LetterGrading    : konversi ke huruf (A, B, C, D, E)
+    - PredicateGrading : penilaian Lulus / Tidak Lulus
+
+Komponen Kelas:
+  - GradingStrategy   : interface strategy
+  - NumericGrading    : implementasi penilaian angka
+  - LetterGrading     : implementasi penilaian huruf
+  - PredicateGrading  : implementasi penilaian predikat
+  - GradeService      : context yang menjalankan strategi
+
+------------------------------------------------------------------------
+FITUR 6: Penyimpanan Data
+------------------------------------------------------------------------
+Aktor         : Sistem
+Design Pattern: Strategy Pattern
+Deskripsi     :
+  Data pengumpulan tugas dapat disimpan ke dua mekanisme penyimpanan yang
+  berbeda: FileStorage (ke file sistem) atau DatabaseStorage (ke database
+  relasional). StorageStrategy.save(submission) dipanggil setelah semua
+  validasi lulus. Pergantian mekanisme penyimpanan tidak memerlukan
+  perubahan pada kode yang memanggilnya.
+Komponen Kelas:
+  - StorageStrategy    : interface strategy penyimpanan
+  - FileStorage        : simpan ke file sistem
+  - DatabaseStorage    : simpan ke database relasional
+
+------------------------------------------------------------------------
+FITUR 7: Riwayat Aktivitas (Activity Log)
+------------------------------------------------------------------------
+Aktor         : Sistem / Admin
+Design Pattern: Singleton Pattern
+Deskripsi     :
+  Semua aktivitas penting dalam sistem (login, logout, buat tugas, edit tugas,
+  submit tugas, beri nilai, ekspor laporan, dll.) dicatat dalam satu instance
+  Logger yang sama. ActivityLogger.getInstance() memastikan hanya ada satu
+  instance Logger yang aktif. Admin dapat melihat log dengan filter berdasarkan
+  pengguna, aksi, atau rentang waktu. Log dapat diekspor via ExportStrategy.
+
+  Data yang dicatat per log entry:
+    - user_id       : siapa yang melakukan aksi
+    - action        : jenis aksi (LOGIN, CREATE_TASK, SUBMIT, dll.)
+    - target_table  : tabel yang terpengaruh (ASSIGNMENT, SUBMISSION, dll.)
+    - target_id     : ID record yang terpengaruh
+    - detail_json   : data sebelum/sesudah perubahan (untuk Undo/Redo)
+    - ip_address    : IP address pengguna
+    - timestamp     : waktu kejadian
+
+Komponen Kelas:
+  - ActivityLogger : singleton logger, satu instance global
+
+------------------------------------------------------------------------
+FITUR 8: Fitur Undo / Redo
+------------------------------------------------------------------------
+Aktor         : Dosen / Mahasiswa
+Design Pattern: Command Pattern
+Deskripsi     :
+  Setiap aksi CRUD tugas disimpan dalam undoStack. Ketika Dosen menekan Undo,
+  CommandManager.undo() mengambil Command terakhir dari undoStack, memindahkannya
+  ke redoStack, lalu memanggil command.undo() untuk membatalkan aksi tersebut.
+  Ketika Dosen menekan Redo, CommandManager.redo() mengambil Command dari
+  redoStack dan mengeksekusi ulang dengan command.redo(). Tampilan daftar tugas
+  diperbarui setelah setiap operasi Undo/Redo.
+
+  Alur Undo/Redo:
+    Execute -> masuk undoStack
+    Undo    -> pindah ke redoStack, jalankan command.undo()
+    Redo    -> pindah ke undoStack, jalankan command.redo()
+
+Komponen Kelas:
+  - Command          : interface dengan execute(), undo(), redo()
+  - CommandManager   : mengelola undoStack dan redoStack
+
+------------------------------------------------------------------------
+FITUR 9: Mode Tampilan (Light/Dark)
+------------------------------------------------------------------------
+Aktor         : Semua Pengguna
+Design Pattern: Abstract Factory Pattern
+Deskripsi     :
+  Pengguna dapat mengganti tema tampilan antara Light Mode dan Dark Mode.
+  UIThemeFactory menciptakan serangkaian komponen UI yang konsisten sesuai
+  tema yang dipilih. Preferensi tema disimpan ke tabel UI_PREFERENCE per
+  pengguna. Pergantian tema tidak memerlukan perubahan pada kode aplikasi
+  yang menggunakan komponen UI.
+Komponen Kelas:
+  - UIThemeFactory     : abstract factory untuk komponen UI
+  - LightThemeFactory  : membuat komponen UI tema terang
+  - DarkThemeFactory   : membuat komponen UI tema gelap
+
+------------------------------------------------------------------------
+FITUR 10: Notifikasi Multi-Channel
+------------------------------------------------------------------------
+Aktor         : Sistem
+Design Pattern: Factory Method Pattern
+Deskripsi     :
+  Notifikasi dapat dikirimkan melalui dua channel berbeda sesuai preferensi
+  pengguna yang tersimpan di UI_PREFERENCE. NotifFactory.createNotification()
+  mendelegasikan pembuatan objek notifikasi ke subclass yang sesuai.
+  Penambahan channel baru (WhatsApp, Telegram) hanya membutuhkan penambahan
+  subclass NotifFactory baru tanpa mengubah kode yang sudah ada.
+Komponen Kelas:
+  - NotifFactory          : abstract creator (Factory Method)
+  - EmailNotification     : notifikasi via email
+  - DashboardNotification : notifikasi via dashboard in-app
+
+------------------------------------------------------------------------
+FITUR 11: Export Data (PDF/CSV)
+------------------------------------------------------------------------
+Aktor         : Dosen / Admin
+Design Pattern: Strategy Pattern
+Deskripsi     :
+  Admin atau Dosen dapat mengekspor laporan tugas dan nilai dalam dua format
+  berbeda. Sistem menentukan ExportStrategy berdasarkan pilihan pengguna,
+  membuat objek konkret (PDFExport atau CSVExport), dan mengeksekusi
+  ExportStrategy.export(data) untuk menghasilkan file. Riwayat ekspor dicatat
+  ke tabel EXPORT_LOG. ActivityLogger mencatat aktivitas ekspor. Sistem
+  menyediakan link unduhan file hasil ekspor.
+Komponen Kelas:
+  - ExportStrategy : interface strategy ekspor
+  - PDFExport      : ekspor ke format PDF
+  - CSVExport      : ekspor ke format CSV
+
+------------------------------------------------------------------------
+FITUR 12: Autentikasi Bertingkat (OTP)
+------------------------------------------------------------------------
+Aktor         : Semua Pengguna
+Design Pattern: Decorator Pattern
+Deskripsi     :
+  Validasi login dapat ditingkatkan dengan lapisan OTP secara dinamis.
+  OTPDecorator membungkus BasicAuth tanpa mengubah implementasi BasicAuth
+  itu sendiri. Ketika OTP aktif untuk suatu akun, OTPDecorator.authenticate()
+  membangkitkan kode OTP melalui generateOTP(), mengirimkannya ke pengguna,
+  dan memvalidasi kode yang dimasukkan melalui verifyOTP(). Jika OTP tidak
+  aktif, proses berhenti setelah BasicAuth berhasil.
+Komponen Kelas:
+  - AuthService      : interface autentikasi
+  - BasicAuth        : autentikasi dasar (username + password)
+  - AuthDecorator    : abstract decorator
+  - OTPDecorator     : concrete decorator yang menambahkan layer OTP
+
+================================================================================
+BAGIAN 3: ACTIVITY DIAGRAM (12 ALUR)
+================================================================================
+
+Berikut penjelasan detail alur setiap activity diagram:
+
+------------------------------------------------------------------------
+AD-1: Login Sistem dengan Autentikasi OTP (Semua Aktor)
+------------------------------------------------------------------------
+Aktor: Mahasiswa / Dosen / Admin
+Langkah-langkah:
+  1. Pengguna membuka halaman login SmartCampus
+  2. Pengguna memasukkan username dan password
+  3. Sistem memvalidasi kredensial via BasicAuth
+     [GAGAL] --> tampilkan pesan error, kembali ke Langkah 2
+  4. [BERHASIL] Sistem memeriksa apakah OTP aktif untuk akun ini
+  5. [OTP AKTIF] Sistem membangkitkan kode OTP via OTPDecorator dan
+     mengirimkannya ke email/SMS pengguna
+  6. Pengguna memasukkan kode OTP yang diterima
+  7. Sistem memvalidasi OTP (cek kode dan masa berlaku)
+     [GAGAL] --> tampilkan pesan error OTP, kembali ke Langkah 6
+  8. [OTP TIDAK AKTIF / OTP VALID] Sistem menentukan role via UserFactory
+  9. Sistem memuat hak akses sesuai role (Mahasiswa/Dosen/Admin)
+  10. ActivityLogger.getInstance().log("LOGIN", userId) mencatat aktivitas
+  11. Sistem mengarahkan pengguna ke dashboard sesuai role
+  12. Pengguna dapat melakukan aktivitas sesuai hak akses
+End state: Pengguna berada di dashboard
+
+------------------------------------------------------------------------
+AD-2: Manajemen Tugas oleh Dosen (CRUD + Undo/Redo)
+------------------------------------------------------------------------
+Aktor: Dosen
+Langkah-langkah:
+  1. Dosen login dan masuk ke halaman Manajemen Tugas
+  2. Dosen memilih aksi: Buat Tugas Baru / Edit Tugas / Hapus Tugas
+     [BUAT]  --> Dosen mengisi form tugas (judul, deskripsi, deadline,
+                 format file, max skor)
+     [EDIT]  --> Dosen memilih tugas yang ada, mengubah data yang diinginkan
+     [HAPUS] --> Dosen memilih tugas yang akan dihapus, sistem meminta konfirmasi
+  3. Sistem membungkus aksi dalam objek Command (Create/Edit/DeleteTaskCommand)
+  4. CommandManager.execute(command) menjalankan aksi dan simpan ke undoStack
+  5. Apakah ada perubahan deadline atau tugas baru?
+     [YA]    --> Assignment.notifyObservers() memicu notifikasi ke mahasiswa
+     [TIDAK] --> lanjut ke langkah berikutnya
+  6. ActivityLogger mencatat aksi ke ACTIVITY_LOG
+  7. Sistem menampilkan konfirmasi berhasil dan memperbarui tampilan daftar tugas
+  8. Dosen memilih: Lakukan Undo/Redo?
+     [UNDO]  --> CommandManager.undo() memanggil command.undo(),
+                 pindahkan ke redoStack
+     [REDO]  --> CommandManager.redo() memanggil command.redo(),
+                 pindahkan ke undoStack
+  9. Sistem memperbarui tampilan daftar tugas
+End state: Selesai / Tetap di Halaman
+
+------------------------------------------------------------------------
+AD-3: Kelola Deadline Tugas oleh Dosen
+------------------------------------------------------------------------
+Aktor: Dosen
+Langkah-langkah:
+  1. Dosen memilih tugas yang akan dikelola deadlinenya
+  2. Dosen memasukkan atau mengubah batas waktu pengumpulan tugas
+  3. Sistem menyimpan waktu baru ke tabel ASSIGNMENT
+  4. Assignment.setDeadline() dipanggil, memicu notifyObservers()
+  5. Setiap DeadlineNotifier (observer) menerima update(task)
+  6. DeadlineNotifier memanggil NotifFactory untuk membuat notifikasi
+  7. [Email]     --> EmailNotification.send() mengirimkan email ke mahasiswa
+     [Dashboard] --> DashboardNotification.send() mengirimkan notifikasi in-app
+  8. Data NOTIFICATION disimpan ke database
+  9. ActivityLogger mencatat perubahan deadline
+  10. Apakah Dosen ingin edit waktu kembali?
+      [YA]    --> kembali ke Langkah 2
+      [TIDAK] --> selesai
+End state: Selesai
+
+------------------------------------------------------------------------
+AD-4: Dosen Menilai Jawaban / Submission Mahasiswa
+------------------------------------------------------------------------
+Aktor: Dosen
+Langkah-langkah:
+  1. Dosen memilih tugas dan melihat daftar submission mahasiswa
+  2. Dosen membuka submission / jawaban mahasiswa
+  3. Dosen memilih metode penilaian: Numerik / Huruf / Predikat
+  4. GradeService.setStrategy(strategy) mengatur metode yang dipilih
+  5. Dosen memasukkan nilai mentah (raw score)
+  6. GradeService.executeGrading(rawScore) menghitung hasil sesuai strategi
+  7. Sistem menampilkan hasil penilaian untuk dikonfirmasi dosen
+  8. Apakah dosen mengkonfirmasi nilai?
+     [EDIT]  --> kembali ke Langkah 5 (masukkan nilai mentah ulang)
+     [YA]    --> sistem menyimpan GRADE ke database
+  9. ActivityLogger mencatat aktivitas penilaian
+  10. Kirim notifikasi nilai ke mahasiswa via NotifFactory
+End state: Nilai Tersimpan
+
+------------------------------------------------------------------------
+AD-5: Mahasiswa Submit Tugas (Chain of Responsibility + State Pattern)
+------------------------------------------------------------------------
+Aktor: Mahasiswa
+Langkah-langkah:
+  1. Mahasiswa login dan masuk ke halaman daftar tugas
+  2. Mahasiswa memilih tugas yang akan dikumpulkan
+  3. Mahasiswa memasukkan file tugas
+  -- CHAIN OF RESPONSIBILITY VALIDATION --
+  4. LoginValidator.handle(req) --> cek sesi aktif
+     [GAGAL] --> redirect ke halaman login
+  5. DeadlineValidator.handle(req) --> cek deadline belum terlewat
+     [GAGAL] --> tampilkan "Deadline sudah lewat"
+  6. FileFormatValidator.handle(req) --> cek format file sesuai
+     [GAGAL] --> tampilkan "Format file tidak valid"
+  7. FileSizeValidator.handle(req) --> cek ukuran file aman
+     [GAGAL] --> tampilkan "File terlalu besar"
+  -- SEMUA VALID --
+  8. Sistem menyimpan file tugas sementara
+  9. SubmissionContext.nextState() --> ubah state ke OnProgressState
+  10. Apakah mahasiswa ingin ganti/hapus file?
+      [GANTI]      --> kembali ke Langkah 3
+      [TIDAK GANTI] --> Mahasiswa memilih "Submit File"
+  11. SubmissionContext.nextState() --> ubah state ke CompletedState
+  12. StorageStrategy.save(submission) menyimpan data ke database/file
+  13. ActivityLogger mencatat aktivitas submit tugas
+  14. Sistem menampilkan konfirmasi pengumpulan berhasil
+End state: Pengumpulan Selesai
+
+------------------------------------------------------------------------
+AD-6: Mahasiswa Update Progress Tugas
+------------------------------------------------------------------------
+Aktor: Mahasiswa
+Langkah-langkah:
+  1. Mahasiswa login dan masuk ke halaman daftar tugas
+  2. Mahasiswa memilih tugas yang akan diupdate progressnya
+  3. Sistem menampilkan status tugas saat ini (Not Started/On Progress/Completed)
+  4. Mahasiswa memilih status baru yang diinginkan
+  5. SubmissionContext.setState(newState) memvalidasi transisi state
+     [TIDAK VALID] --> tampilkan pesan "Transisi tidak diperbolehkan"
+     [VALID]       --> simpan state ke tabel SUBMISSION
+  6. ActivityLogger mencatat perubahan progress
+  7. Sistem menampilkan konfirmasi update berhasil
+  8. Apakah status baru = Completed?
+     [YA]    --> sistem mengirimkan notifikasi ke Dosen
+     [TIDAK] --> selesai (Progress Diperbarui)
+End state: Progress Diperbarui
+
+------------------------------------------------------------------------
+AD-7: Mahasiswa Mendaftar Mata Kuliah
+------------------------------------------------------------------------
+Aktor: Mahasiswa
+Langkah-langkah:
+  1. Mahasiswa login dan membuka halaman Daftar Mata Kuliah
+  2. Sistem menampilkan daftar mata kuliah tersedia
+  3. Mahasiswa memilih mata kuliah yang diinginkan
+  4. Sistem memeriksa ketersediaan kuota (COURSE.kuota)
+     [PENUH]    --> tampilkan "Kuota MK penuh", mahasiswa memilih MK lain
+     [TERSEDIA] --> simpan ENROLLMENT dengan status pending
+  5. Apakah mahasiswa ingin edit pilihan MK?
+     [EDIT]       --> kembali ke Langkah 3
+     [KONFIRMASI] --> mahasiswa memilih "Submit MK"
+  6. Status ENROLLMENT diubah menjadi active
+  7. ActivityLogger mencatat aktivitas pendaftaran MK
+  8. Sistem mengirim notifikasi konfirmasi pendaftaran ke mahasiswa
+End state: Pendaftaran Berhasil
+
+------------------------------------------------------------------------
+AD-8: Admin Mengelola Akun Pengguna (CRUD User)
+------------------------------------------------------------------------
+Aktor: Admin
+Langkah-langkah:
+  1. Admin login dan membuka halaman Kelola Akun Pengguna
+  2. Admin mencari/filter akun pengguna
+  3. Sistem menampilkan daftar pengguna sesuai filter
+  4. Admin memilih aksi pengelolaan:
+     [STATUS] --> Admin mengubah status is_active (aktifkan/nonaktifkan)
+     [TAMBAH] --> Admin mengisi form data pengguna baru
+     [EDIT]   --> Admin memilih pengguna dan mengubah data
+     [HAPUS]  --> Admin memilih pengguna yang akan dihapus
+  5. Admin mengkonfirmasi aksi yang dipilih
+  6. Sistem memproses aksi via UserFactory (untuk tambah) atau CRUD langsung
+  7. Perubahan disimpan ke tabel USER / STUDENT / LECTURER di database
+  8. ActivityLogger mencatat aktivitas pengelolaan akun
+  9. Sistem menampilkan konfirmasi berhasil
+End state: Pengelolaan Selesai
+
+------------------------------------------------------------------------
+AD-9: Admin Mengelola Enrollment Mata Kuliah
+------------------------------------------------------------------------
+Aktor: Admin
+Langkah-langkah:
+  1. Admin login dan membuka halaman Kelola Enrollment MK
+  2. Admin memilih mata kuliah yang akan dikelola
+  3. Sistem menampilkan daftar peserta MK saat ini
+  4. Admin memilih aksi:
+     [TAMBAH] --> Admin menambahkan mahasiswa ke MK
+     [HAPUS]  --> Admin menghapus mahasiswa dari MK
+  5. Sistem memverifikasi status enrollment
+     [TIDAK VALID] --> tampilkan pesan "Verifikasi Gagal"
+     [VALID]       --> simpan perubahan ke tabel ENROLLMENT
+  6. ActivityLogger mencatat aktivitas enrollment
+  7. Sistem mengirim notifikasi ke mahasiswa yang bersangkutan
+End state: Enrollment Diperbarui
+
+------------------------------------------------------------------------
+AD-10: Admin/Dosen Mengekspor Laporan Tugas
+------------------------------------------------------------------------
+Aktor: Admin / Dosen
+Langkah-langkah:
+  1. Admin/Dosen login dan membuka halaman Export Laporan Tugas
+  2. Admin/Dosen memilih rentang data dan mata kuliah yang akan diekspor
+  3. Admin/Dosen memilih format ekspor: PDF atau CSV
+  4. Sistem menentukan ExportStrategy berdasarkan pilihan:
+     [PDF] --> buat objek PDFExport
+     [CSV] --> buat objek CSVExport
+  5. ExportStrategy.export(data) memproses data dan menghasilkan file
+  6. Sistem menyimpan riwayat ekspor ke tabel EXPORT_LOG
+  7. ActivityLogger mencatat aktivitas ekspor
+  8. Sistem menyediakan link unduhan file hasil ekspor
+End state: File siap diunduh
+
+------------------------------------------------------------------------
+AD-11: Admin Mengelola Data Mata Kuliah
+------------------------------------------------------------------------
+Aktor: Admin
+Langkah-langkah:
+  1. Admin login dan membuka halaman Kelola Manajemen Mata Kuliah
+  2. Sistem menampilkan daftar mata kuliah yang ada
+  3. Admin memilih aksi pengelolaan:
+     [TAMBAH] --> Admin mengisi form mata kuliah baru
+     [EDIT]   --> Admin memilih MK yang ada dan mengubah data
+     [HAPUS]  --> Admin memilih MK yang akan dihapus
+  4. Sistem memvalidasi data yang dimasukkan
+     [TIDAK VALID] --> tampilkan pesan "Data Tidak Valid"
+     [VALID]       --> simpan perubahan ke tabel COURSE
+  5. ActivityLogger mencatat aktivitas pengelolaan MK
+  6. Sistem memperbarui tampilan daftar mata kuliah
+End state: Pengelolaan Selesai
+
+------------------------------------------------------------------------
+AD-12: Admin Melihat Riwayat Aktivitas Sistem
+------------------------------------------------------------------------
+Aktor: Admin
+Langkah-langkah:
+  1. Admin login dan membuka halaman Activity Log
+  2. Admin memilih filter: berdasarkan pengguna, aksi, atau rentang waktu
+  3. ActivityLogger.getInstance().getLogs() mengambil data dari ACTIVITY_LOG
+  4. Sistem menampilkan daftar log aktivitas sesuai filter
+  5. Admin dapat melihat detail setiap log:
+     - user: siapa yang melakukan
+     - action: jenis aksi
+     - target: tabel dan ID yang terpengaruh
+     - timestamp: kapan terjadi
+     - ip_address: dari mana
+  6. Apakah Admin ingin mengekspor log?
+     [YA]    --> ekspor log via ExportStrategy (PDF/CSV)
+     [TIDAK] --> selesai
+End state: Aktivitas Selesai
+
+================================================================================
+BAGIAN 4: USE CASE DIAGRAM
+================================================================================
+
+Use case diagram SmartCampus menggambarkan interaksi antara tiga aktor utama
+dengan fungsionalitas sistem di dalam System Boundary.
+
+AKTOR-AKTOR:
+  1. Mahasiswa  : pengguna dengan hak akses terbatas pada tugas dan MK sendiri
+  2. Dosen      : pengguna dengan hak kelola tugas, nilai, dan deadline
+  3. Admin      : pengguna dengan hak akses penuh terhadap seluruh sistem
+
+USE CASE UTAMA (SYSTEM BOUNDARY):
+  Bersama (Semua Aktor):
+  - Login Sistem
+  - Logout Sistem
+  - Autentikasi OTP (<<extend>> dari Login Sistem)
+
+  Mahasiswa:
+  - Lihat Daftar Tugas
+  - Submit Tugas         (memiliki sub-use case: Masukkan File Tugas,
+                          Save File Tugas, Edit File Tugas, Remove File,
+                          Ganti File, Submit File)
+  - Update Progress Tugas
+  - Lihat Notifikasi Deadline
+  - Daftar Mata Kuliah   (memiliki sub-use case: Cek Kuota MK, Pilih MK,
+                          Edit MK, Ganti MK, Save MK, Submit MK)
+
+  Dosen:
+  - Buat Tugas Baru
+  - Edit Tugas
+  - Hapus Tugas
+  - Kelola Deadline Tugas   (memiliki sub-use case: Buat Batas Waktu,
+                              Save Waktu, Edit Batas Waktu, Ganti Tanggal)
+  - Beri Nilai Mahasiswa    (memiliki sub-use case: Cek Jawaban Tugas,
+                              Masukkan Nilai Mentah, Save Hasil Nilai,
+                              Edit Nilai, Ganti Nilai)
+  - Monitor Mahasiswa
+  - Export Laporan Tugas (bersama Admin)
+
+  Admin:
+  - Kelola Manajemen Mata Kuliah  (Lihat Daftar, Tambah MK, Edit Data,
+                                    Hapus MK)
+  - Kelola Enrollment MK          (Lihat Daftar Peserta, Pilih MK,
+                                    Tambah Mahasiswa ke MK, Hapus Mahasiswa
+                                    dari MK, Verifikasi Status Enrollment)
+  - Kelola Akun Pengguna (CRUD User) (Cari Akun, Nonaktifkan/Aktifkan,
+                                       Tambah Pengguna Baru, Edit Data,
+                                       Hapus Pengguna, Save Data)
+  - Lihat Activity Log
+  - Export Laporan Tugas (bersama Dosen)
+
+RELASI USE CASE:
+  - Login Sistem <<extend>> Autentikasi OTP
+    (OTP hanya aktif jika dikonfigurasi pada akun pengguna)
+  - Submit Tugas <<include>> Masukkan File Tugas
+  - Kelola Enrollment MK: Tambah Mahasiswa <<extend>> Hapus Mahasiswa
+    (hapus adalah opsi dari aksi kelola)
+
+================================================================================
+BAGIAN 5: ENTITY RELATIONSHIP DIAGRAM (ERD)
+================================================================================
+
+ERD SmartCampus memiliki 12 entitas utama yang saling berelasi.
+
+------------------------------------------------------------------------
+ENTITAS-ENTITAS DAN ATRIBUTNYA:
+------------------------------------------------------------------------
+
+1. USER
+   Atribut: id (PK), name, email, password_hash, role ENUM(mahasiswa/dosen/admin),
+             otp_code, otp_expiry, is_active, created_at, updated_at
+   Keterangan: Entitas utama yang menyimpan semua akun pengguna.
+               Kolom otp_code dan otp_expiry mendukung Fitur 12 (OTP).
+               Kolom role membedakan jenis pengguna.
+               Kolom is_active mendukung nonaktifasi akun oleh Admin.
+
+2. STUDENT
+   Atribut: id (PK), user_id (FK -> USER), nim, program_studi, semester, angkatan
+   Keterangan: Profil tambahan mahasiswa. Relasi one-to-one opsional dengan USER.
+
+3. LECTURER
+   Atribut: id (PK), user_id (FK -> USER), nip, department, jabatan
+   Keterangan: Profil tambahan dosen. Relasi one-to-one opsional dengan USER.
+
+4. COURSE
+   Atribut: id (PK), lecturer_id (FK -> LECTURER), name, code, sks, semester,
+             kuota, description, is_active
+   Keterangan: Data mata kuliah. Kolom kuota mendukung pengecekan kapasitas
+               saat mahasiswa Daftar Mata Kuliah (Fitur 7).
+
+5. ENROLLMENT
+   Atribut: id (PK), student_id (FK -> STUDENT), course_id (FK -> COURSE),
+             enrolled_at, status ENUM(pending/active/dropped), verified_by (FK -> USER)
+   Keterangan: Tabel junction M:N antara STUDENT dan COURSE.
+               Mendukung use case Kelola Enrollment MK.
+
+6. ASSIGNMENT
+   Atribut: id (PK), course_id (FK -> COURSE), title, description, deadline,
+             max_score, file_format_allowed, max_file_size_kb,
+             created_by (FK -> USER), created_at, updated_at
+   Keterangan: Data tugas. Mendukung Kelola Deadline Tugas dan Manajemen Tugas.
+
+7. SUBMISSION
+   Atribut: id (PK), assignment_id (FK -> ASSIGNMENT), student_id (FK -> STUDENT),
+             file_path, file_name, file_format, file_size_kb, submitted_at, updated_at,
+             status ENUM(draft/submitted/late),
+             progress ENUM(not_started/on_progress/completed)
+   Keterangan: Pengumpulan tugas mahasiswa.
+               Kolom progress mendukung State Pattern (Fitur 4).
+               Kolom status mencatat status pengumpulan (tepat waktu/terlambat).
+
+8. GRADE
+   Atribut: id (PK), submission_id (FK -> SUBMISSION), graded_by (FK -> USER),
+             grading_strategy ENUM(numeric/letter/predicate), raw_score, result,
+             graded_at, updated_at
+   Keterangan: Penilaian tugas. Kolom grading_strategy mencatat metode
+               Strategy Pattern yang digunakan dosen.
+
+9. NOTIFICATION
+   Atribut: id (PK), user_id (FK -> USER), assignment_id (FK -> ASSIGNMENT),
+             channel ENUM(email/dashboard), message, is_read, sent_at
+   Keterangan: Riwayat notifikasi. Mendukung Observer Pattern (Fitur 3)
+               dan Notifikasi Multi-Channel (Fitur 10).
+
+10. ACTIVITY_LOG
+    Atribut: id (PK), user_id (FK -> USER), action, target_table, target_id,
+              detail_json, ip_address, timestamp
+    Keterangan: Log semua aktivitas sistem. Singleton ActivityLogger menulis
+                ke tabel ini. Kolom detail_json menyimpan data sebelum/sesudah
+                perubahan untuk mendukung Undo/Redo (Fitur 8).
+
+11. EXPORT_LOG
+    Atribut: id (PK), requested_by (FK -> USER), export_type ENUM(pdf/csv),
+              file_path, created_at, status
+    Keterangan: Menyimpan riwayat ekspor data. Mendukung Strategy Pattern
+                pada Export Laporan Tugas (Fitur 11).
+
+12. UI_PREFERENCE
+    Atribut: id (PK), user_id (FK -> USER), theme ENUM(light/dark),
+              notification_channel, updated_at
+    Keterangan: Preferensi tampilan dan notifikasi per pengguna.
+                Mendukung Mode Tampilan (Fitur 9) dan Notifikasi Multi-Channel.
+
+------------------------------------------------------------------------
+RELASI ANTAR ENTITAS:
+------------------------------------------------------------------------
+
+  USER --> STUDENT          : 1 : 0..1  (one-to-one opsional)
+  USER --> LECTURER         : 1 : 0..1  (one-to-one opsional)
+  LECTURER --> COURSE       : 1 : 0..*  (satu dosen mengajar banyak MK)
+  COURSE --> ENROLLMENT     : 1 : 0..*  (satu MK punya banyak enrollment)
+  STUDENT --> ENROLLMENT    : 1 : 0..*  (satu mahasiswa mendaftar ke banyak MK)
+  COURSE --> ASSIGNMENT     : 1 : 0..*  (satu MK punya banyak tugas)
+  ASSIGNMENT --> SUBMISSION : 1 : 0..*  (satu tugas menerima banyak submission)
+  STUDENT --> SUBMISSION    : 1 : 0..*  (satu mahasiswa punya banyak submission)
+  SUBMISSION --> GRADE      : 1 : 0..*  (satu submission bisa dinilai ulang)
+  USER --> NOTIFICATION     : 1 : 0..*  (satu user terima banyak notifikasi)
+  ASSIGNMENT --> NOTIFICATION : 1 : 0..* (satu tugas memicu banyak notifikasi)
+  USER --> ACTIVITY_LOG     : 1 : 0..*  (semua aktivitas user tercatat)
+  USER --> EXPORT_LOG       : 1 : 0..*  (satu user punya riwayat ekspor)
+  USER --> UI_PREFERENCE    : 1 : 1     (one-to-one, setiap user satu preferensi)
+
+------------------------------------------------------------------------
+PENAMBAHAN ENTITAS/KOLOM DARI RANCANGAN AWAL:
+------------------------------------------------------------------------
+  + Entitas EXPORT_LOG       : untuk traceability dan audit trail ekspor
+  + Entitas UI_PREFERENCE    : untuk preferensi tema dan channel notifikasi
+  + Kolom otp_code, otp_expiry di USER : mendukung OTP tanpa tabel terpisah
+  + Kolom kuota di COURSE    : untuk Cek Kuota MK saat pendaftaran
+  + Kolom progress di SUBMISSION : untuk State Pattern tracking progress
+  + Kolom detail_json di ACTIVITY_LOG : untuk Undo/Redo berbasis log
+
+================================================================================
+BAGIAN 6: CLASS DIAGRAM
+================================================================================
+
+Class diagram SmartCampus diorganisasikan dalam 9 layer arsitektur:
+
+------------------------------------------------------------------------
+LAYER 1: AUTH LAYER (Decorator Pattern)
+------------------------------------------------------------------------
+Kelas:
+  AuthService (Interface)
+    - Metode: authenticate(): boolean
+    - Komponen utama Decorator Pattern
+
+  BasicAuth
+    - Atribut: username: String, password: String
+    - Metode: authenticate(): boolean
+    - Concrete component. Validasi username + password.
+
+  AuthDecorator (Abstract)
+    - Atribut: wrapped: AuthService
+    - Metode: authenticate(): boolean
+    - Abstract decorator. Membungkus AuthService lain.
+
+  OTPDecorator
+    - Atribut: otpCode: String, expiry: DateTime
+    - Metode: authenticate(), verifyOTP(), generateOTP()
+    - Concrete Decorator: menambahkan layer OTP ke BasicAuth
+
+------------------------------------------------------------------------
+LAYER 2: USER LAYER (Abstract Factory Pattern)
+------------------------------------------------------------------------
+Kelas:
+  UserFactory (Abstract)
+    - Metode: createUser(): User, createProfile(): Profile
+
+  StudentFactory
+    - Metode: createUser(): Student, createProfile(), enrollCourse()
+
+  LecturerFactory
+    - Metode: createUser(): Lecturer, createProfile(), createTask()
+
+  AdminFactory
+    - Metode: createUser(): Admin, createProfile(), managePermission()
+
+  User (Abstract Base Class)
+    - Atribut: id, name, email, role, isActive
+    - Metode: login(), logout(), getProfile()
+
+  Student (extends User)
+    - Atribut: nim, programStudi, semester
+    - Metode: submitTask(), updateProgress(), enrollCourse(), daftarMK()
+
+  Lecturer (extends User)
+    - Atribut: nip, department
+    - Metode: createTask(), editTask(), deleteTask(), beriNilai(), monitorProgress()
+
+  Admin (extends User)
+    - Atribut: jabatan
+    - Metode: manageUser(), manageEnrollment(), exportReport(), viewActivityLog()
+
+------------------------------------------------------------------------
+LAYER 3: TASK & ASSIGNMENT LAYER (Command + Observer Pattern)
+------------------------------------------------------------------------
+Kelas:
+  Assignment (Subject dalam Observer Pattern)
+    - Atribut: id, title, deadline, status, maxScore, observers: List<TaskObserver>
+    - Metode: attach(o), detach(o), notifyObservers(), setDeadline(), getStatus()
+    - Memicu notifikasi saat deadline berubah
+
+  TaskObserver (Interface)
+    - Metode: update(task: Assignment), getNotification(), acknowledge()
+
+  DeadlineNotifier (implements TaskObserver)
+    - Atribut: studentId, channel: NotifFactory
+    - Metode: update(task), notifyStudent(), acknowledge()
+
+  Command (Interface)
+    - Metode: execute(), undo(), redo()
+
+  CreateTaskCommand
+    - Atribut: task: Assignment, receiver: Lecturer
+    - Metode: execute(), undo(), redo()
+
+  EditTaskCommand
+    - Atribut: task: Assignment, oldData, newData
+    - Metode: execute(), undo(), redo()
+
+  DeleteTaskCommand
+    - Atribut: task: Assignment
+    - Metode: execute(), undo(), redo()
+
+  CommandManager
+    - Atribut: undoStack: Stack<Command>, redoStack: Stack<Command>
+    - Metode: execute(cmd), undo(), redo()
+
+------------------------------------------------------------------------
+LAYER 4: SUBMISSION & STATE LAYER (State + Chain of Responsibility)
+------------------------------------------------------------------------
+Kelas:
+  SubmissionState (Interface)
+    - Metode: handle(submission), getStatusName()
+
+  NotStartedState
+    - Metode: handle(), getStatusName(): "Not Started"
+
+  OnProgressState
+    - Metode: handle(), getStatusName(): "On Progress"
+
+  CompletedState
+    - Metode: handle(), getStatusName(): "Completed"
+
+  SubmissionContext
+    - Atribut: currentState: SubmissionState, submission: Submission
+    - Metode: setState(s), nextState(), getStatus()
+
+  ValidationHandler (Abstract - Chain of Responsibility)
+    - Atribut: nextHandler: ValidationHandler
+    - Metode: setNext(h), handle(req: SubmitRequest)
+
+  LoginValidator
+    - Metode: handle(req), checkSession()
+
+  DeadlineValidator
+    - Metode: handle(req), checkDeadline()
+
+  FileFormatValidator
+    - Atribut: allowedFormats: List
+    - Metode: handle(req), checkFormat()
+
+  FileSizeValidator
+    - Atribut: maxSizeKB: int
+    - Metode: handle(req), checkSize()
+
+------------------------------------------------------------------------
+LAYER 5: GRADING LAYER (Strategy Pattern)
+------------------------------------------------------------------------
+Kelas:
+  GradingStrategy (Interface)
+    - Metode: calculate(score: double): String
+
+  NumericGrading
+    - Atribut: minScore, maxScore
+    - Metode: calculate(score) -> nilai angka 0-100
+
+  LetterGrading
+    - Atribut: thresholds: Map
+    - Metode: calculate(score) -> A, B, C, D, atau E
+
+  PredicateGrading
+    - Atribut: passMark: double
+    - Metode: calculate(score) -> "Lulus" atau "Tidak Lulus"
+
+  GradeService (Context)
+    - Atribut: strategy: GradingStrategy
+    - Metode: setStrategy(s), executeGrading(score), getResult()
+
+------------------------------------------------------------------------
+LAYER 6: NOTIFICATION LAYER (Factory Method Pattern)
+------------------------------------------------------------------------
+Kelas:
+  NotifFactory (Abstract Creator)
+    - Metode: createNotification(): Notification
+
+  EmailNotification
+    - Atribut: email, subject, body
+    - Metode: send(), format()
+
+  DashboardNotification
+    - Atribut: userId, message
+    - Metode: send(), markAsRead()
+
+------------------------------------------------------------------------
+LAYER 7: STORAGE & EXPORT LAYER (Strategy Pattern)
+------------------------------------------------------------------------
+Kelas:
+  StorageStrategy (Interface)
+    - Metode: save(data), load(key), delete(key)
+
+  FileStorage
+    - Atribut: filePath: String
+    - Metode: save(), load(), delete()
+
+  DatabaseStorage
+    - Atribut: connectionString: String
+    - Metode: save(), load(), delete()
+
+  ExportStrategy (Interface)
+    - Metode: export(data): File
+
+  PDFExport
+    - Atribut: template: String
+    - Metode: export(data)
+
+  CSVExport
+    - Atribut: delimiter: char
+    - Metode: export(data)
+
+------------------------------------------------------------------------
+LAYER 8: UI & PREFERENCE LAYER (Abstract Factory Pattern)
+------------------------------------------------------------------------
+Kelas:
+  UIThemeFactory (Abstract)
+    - Metode: createButton(): UIButton, createPanel(): UIPanel, createText(): UIText
+
+  LightThemeFactory
+    - Metode: createButton(), createPanel(), createText()
+    - Membuat komponen UI tema terang
+
+  DarkThemeFactory
+    - Metode: createButton(), createPanel(), createText()
+    - Membuat komponen UI tema gelap
+
+------------------------------------------------------------------------
+LAYER 9: LOGGING LAYER (Singleton Pattern)
+------------------------------------------------------------------------
+Kelas:
+  ActivityLogger (Singleton)
+    - Atribut: instance: ActivityLogger (static), logEntries: List<LogEntry>
+    - Metode: getInstance(): ActivityLogger, log(action, userId, detail),
+              getLogs(), clearLogs()
+    - Hanya satu instance yang boleh ada di seluruh sistem
+
+================================================================================
+BAGIAN 7: DESIGN PATTERN YANG DIIMPLEMENTASIKAN
+================================================================================
+
+SmartCampus mengimplementasikan 8 design pattern utama + 1 pattern pendukung.
+Total ini melebihi persyaratan minimal 4 pattern untuk kelompok 4 orang.
+
+========================================
+PATTERN 1: ABSTRACT FACTORY
+========================================
+Digunakan pada: Fitur 1 (Login & Role Management) + Fitur 9 (Mode Tampilan)
+
+Masalah yang diselesaikan:
+  Sistem memiliki tiga jenis pengguna (Student, Lecturer, Admin) dengan atribut
+  dan hak akses berbeda. Tanpa factory, kode klien perlu mengetahui kelas
+  konkret berdasarkan role, menciptakan ketergantungan yang kuat.
+
+Solusi dengan Abstract Factory:
+  UserFactory mendefinisikan interface untuk membuat keluarga objek User.
+  Setiap subclass factory (StudentFactory, LecturerFactory, AdminFactory)
+  bertanggung jawab membuat objek User yang sesuai beserta profilnya.
+  UIThemeFactory melakukan hal yang sama untuk komponen UI.
+
+Rasionalisasi:
+  - Penambahan tipe pengguna baru (misal: Asisten Dosen) cukup menambah
+    satu factory baru tanpa mengubah kode yang sudah ada (OCP).
+  - Menjamin konsistensi komponen yang dibuat dalam satu "keluarga".
+  - Memisahkan proses pembuatan objek dari logika penggunaan.
+
+Kelas yang terlibat:
+  UserFactory, StudentFactory, LecturerFactory, AdminFactory,
+  UIThemeFactory, LightThemeFactory, DarkThemeFactory
+
+========================================
+PATTERN 2: FACTORY METHOD
+========================================
+Digunakan pada: Fitur 10 (Notifikasi Multi-Channel)
+
+Masalah yang diselesaikan:
+  Sistem perlu membuat objek notifikasi untuk channel yang berbeda (Email,
+  Dashboard) tanpa menggabungkan logika pembuatan ke kode DeadlineNotifier.
+
+Solusi dengan Factory Method:
+  NotifFactory mendefinisikan interface createNotification(). Subclass
+  (EmailNotificationFactory, DashboardNotificationFactory) mengimplementasi
+  factory method ini untuk membuat objek notifikasi yang sesuai.
+
+Rasionalisasi:
+  - Berbeda dari Abstract Factory, di sini hanya satu objek yang perlu
+    dibuat (Notification), bukan keluarga objek.
+  - Penambahan channel baru (WhatsApp, Telegram) hanya membutuhkan subclass
+    baru tanpa mengubah DeadlineNotifier atau Assignment.
+  - Mendukung prinsip Open/Closed: terbuka untuk ekstensi.
+
+Kelas yang terlibat:
+  NotifFactory, EmailNotification, DashboardNotification
+
+========================================
+PATTERN 3: STRATEGY
+========================================
+Digunakan pada: Fitur 5 (Penilaian), Fitur 6 (Penyimpanan), Fitur 11 (Ekspor)
+
+Masalah yang diselesaikan:
+  Tiga konteks berbeda membutuhkan kemampuan mengganti algoritma saat runtime:
+  1. Dosen memilih metode penilaian yang berbeda per submission
+  2. Sistem mungkin perlu ganti mekanisme penyimpanan (file vs database)
+  3. Admin/Dosen memilih format ekspor (PDF atau CSV)
+
+Solusi dengan Strategy:
+  Setiap konteks memiliki interface Strategy-nya sendiri:
+  - GradingStrategy  : calculate(score) untuk metode penilaian
+  - StorageStrategy  : save/load/delete untuk penyimpanan data
+  - ExportStrategy   : export(data) untuk format ekspor
+  Context class (GradeService, SubmissionContext) menyimpan referensi ke
+  strategy yang aktif dan mendelegasikan operasi ke strategy tersebut.
+
+Rasionalisasi:
+  - Algoritma dapat diganti saat runtime tanpa mengubah kelas Context.
+  - Setiap algoritma dikapsulasi dalam kelas terpisah (SRP).
+  - Penambahan algoritma baru tidak memerlukan perubahan kode yang ada (OCP).
+  - Mendukung dependency inversion: Context bergantung pada interface,
+    bukan implementasi konkret.
+
+Kelas yang terlibat:
+  GradeService, GradingStrategy, NumericGrading, LetterGrading, PredicateGrading;
+  StorageStrategy, FileStorage, DatabaseStorage;
+  ExportStrategy, PDFExport, CSVExport
+
+========================================
+PATTERN 4: OBSERVER
+========================================
+Digunakan pada: Fitur 3 (Deadline Reminder Otomatis)
+
+Masalah yang diselesaikan:
+  Ketika dosen mengubah deadline tugas, semua mahasiswa yang terdaftar pada
+  mata kuliah tersebut harus mendapat notifikasi secara otomatis. Tanpa Observer,
+  Assignment perlu secara eksplisit memanggil setiap mahasiswa satu per satu,
+  menciptakan ketergantungan yang ketat (tight coupling).
+
+Solusi dengan Observer:
+  Assignment bertindak sebagai Subject yang menyimpan daftar DeadlineNotifier
+  (observer). Saat deadline berubah, Assignment memanggil notifyObservers()
+  yang secara otomatis memicu update(task) di semua observer terdaftar.
+  Setiap DeadlineNotifier kemudian mengirimkan notifikasi sesuai channel.
+
+Rasionalisasi:
+  - Loose coupling: Assignment tidak perlu tahu siapa yang akan dinotifikasi.
+  - Skalabilitas: menambah mahasiswa baru tidak mengubah kode Assignment.
+  - Fleksibilitas: observer dapat ditambah atau dihapus saat runtime
+    (ketika mahasiswa daftar atau keluar dari MK).
+  - Sesuai use case "Kelola Deadline Tugas" dan "Lihat Notifikasi Deadline".
+
+Kelas yang terlibat:
+  Assignment (Subject), TaskObserver (Interface), DeadlineNotifier
+
+========================================
+PATTERN 5: SINGLETON
+========================================
+Digunakan pada: Fitur 7 (Riwayat Aktivitas)
+
+Masalah yang diselesaikan:
+  Seluruh sistem perlu mencatat aktivitas ke satu tempat terpusat. Jika ada
+  lebih dari satu instance Logger, aktivitas dari pengguna yang berbeda bisa
+  tercatat di instance berbeda sehingga log tidak terkonsolidasi.
+
+Solusi dengan Singleton:
+  ActivityLogger.getInstance() menggunakan lazy initialization dan
+  synchronized method untuk memastikan hanya satu instance yang dibuat
+  bahkan di lingkungan multi-threaded. Setiap komponen di sistem
+  memanggil ActivityLogger.getInstance() untuk mendapatkan instance yang sama.
+
+Rasionalisasi:
+  - Menjamin hanya satu instance logger dalam seluruh siklus hidup aplikasi.
+  - Mencegah duplikasi log dan inkonsistensi data aktivitas.
+  - Memudahkan audit trail karena semua log masuk ke satu tempat.
+  - Menjadi cross-cutting concern yang digunakan oleh semua pattern lain.
+
+Kelas yang terlibat:
+  ActivityLogger (dengan private constructor + static getInstance())
+
+========================================
+PATTERN 6: COMMAND
+========================================
+Digunakan pada: Fitur 2 (Manajemen Tugas) + Fitur 8 (Undo/Redo)
+
+Masalah yang diselesaikan:
+  Dosen perlu kemampuan membatalkan (undo) dan mengulang (redo) aksi CRUD
+  tugas. Tanpa Command Pattern, implementasi Undo/Redo membutuhkan logika
+  yang tersebar di seluruh codebase dan sulit dikelola.
+
+Solusi dengan Command:
+  Setiap aksi CRUD dikapsulasi sebagai objek Command dengan metode:
+  - execute() : jalankan aksi
+  - undo()    : batalkan aksi (simpan state sebelum execute)
+  - redo()    : ulangi aksi yang sudah di-undo
+  CommandManager menyimpan undoStack dan redoStack untuk mengelola riwayat.
+
+  Alur detail:
+  - execute() --> aksi dijalankan, command masuk undoStack
+  - undo()    --> command teratas dari undoStack diambil, undo() dipanggil,
+                  command dipindah ke redoStack
+  - redo()    --> command teratas dari redoStack diambil, redo() dipanggil,
+                  command dipindah ke undoStack
+
+Rasionalisasi:
+  - Mengkapsulasi aksi sebagai objek memungkinkan penyimpanan riwayat.
+  - Mendukung fitur Undo/Redo yang bersih dan mudah diperluas.
+  - CommandManager dapat logging setiap command ke ActivityLogger secara terpusat.
+  - Memudahkan penambahan perintah baru tanpa mengubah CommandManager (OCP).
+
+Kelas yang terlibat:
+  Command (Interface), CreateTaskCommand, EditTaskCommand, DeleteTaskCommand,
+  CommandManager
+
+========================================
+PATTERN 7: STATE
+========================================
+Digunakan pada: Fitur 4 (Tracking Progress Tugas)
+
+Masalah yang diselesaikan:
+  Perilaku objek Submission berubah drastis tergantung statusnya. Tanpa
+  State Pattern, kode akan dipenuhi if-else atau switch-case yang mengecek
+  status di setiap operasi, sulit dibaca dan dipelihara.
+
+Solusi dengan State:
+  Status pengerjaan tugas diwakili tiga kelas State konkret yang masing-masing
+  mengimplementasi interface SubmissionState. SubmissionContext menyimpan
+  referensi ke state saat ini dan mendelegasikan perilaku ke state aktif.
+  Transisi state divalidasi sebelum dieksekusi.
+
+  Transisi yang valid:
+    NotStartedState --> OnProgressState  (mahasiswa mulai mengerjakan)
+    OnProgressState --> CompletedState   (mahasiswa submit tugas)
+    CompletedState  --> (tidak bisa kembali ke status sebelumnya)
+
+  Perilaku per state:
+    NotStartedState : mengizinkan upload file pertama kali
+    OnProgressState : mengizinkan penggantian file tugas
+    CompletedState  : hanya tampilan, tidak bisa edit
+
+Rasionalisasi:
+  - Menghilangkan if-else berlapis dalam logika submission.
+  - Setiap state memiliki tanggung jawab yang jelas (SRP).
+  - Penambahan state baru (misal: "In Review") hanya menambah kelas baru (OCP).
+  - Transisi state yang tidak valid ditangani secara bersih.
+
+Kelas yang terlibat:
+  SubmissionState, NotStartedState, OnProgressState, CompletedState,
+  SubmissionContext
+
+========================================
+PATTERN 8: DECORATOR
+========================================
+Digunakan pada: Fitur 12 (Autentikasi Bertingkat OTP)
+
+Masalah yang diselesaikan:
+  Fitur OTP harus dapat diaktifkan atau dinonaktifkan per akun tanpa mengubah
+  implementasi autentikasi dasar (BasicAuth). Menambahkan logika OTP langsung
+  ke BasicAuth melanggar Single Responsibility Principle.
+
+Solusi dengan Decorator:
+  OTPDecorator membungkus (wraps) BasicAuth dengan mengimplementasi interface
+  AuthService yang sama. Ketika authenticate() dipanggil pada OTPDecorator:
+  1. OTPDecorator memanggil wrapped.authenticate() (BasicAuth) terlebih dahulu.
+  2. Jika berhasil dan OTP aktif: generate OTP, kirim ke pengguna, validasi kode.
+  3. Jika OTP tidak aktif: lewati langkah OTP.
+
+Rasionalisasi:
+  - Menambahkan fitur OTP secara transparan tanpa mengubah BasicAuth.
+  - Pengguna yang tidak mengaktifkan OTP tetap menggunakan BasicAuth langsung.
+  - Dapat ditumpuk (stacked): OTPDecorator bisa dibungkus lagi oleh decorator lain
+    (misal: RateLimitDecorator) di masa depan.
+  - Memisahkan concern autentikasi dasar dari autentikasi bertingkat (SRP).
+
+Kelas yang terlibat:
+  AuthService (Interface), BasicAuth, AuthDecorator (Abstract), OTPDecorator
+
+========================================
+PATTERN PENDUKUNG: CHAIN OF RESPONSIBILITY
+========================================
+Digunakan pada: Fitur 5 (Submit Tugas) - sebagai pattern tambahan
+
+Masalah yang diselesaikan:
+  Proses pengumpulan tugas membutuhkan beberapa validasi bertahap. Menempatkan
+  semua validasi dalam satu metode besar menciptakan kode yang panjang, sulit
+  dibaca, dan sulit diperluas.
+
+Solusi dengan Chain of Responsibility:
+  Empat validator dihubungkan dalam sebuah chain. Setiap validator hanya
+  bertanggung jawab untuk satu validasi dan mendelegasikan ke validator
+  berikutnya jika validasinya lulus.
+
+  Chain: LoginValidator --> DeadlineValidator --> FileFormatValidator
+         --> FileSizeValidator --> [VALID: proses submission]
+
+Rasionalisasi:
+  - Setiap validator memiliki satu tanggung jawab (SRP).
+  - Penambahan validator baru (misal: VirusScanner) hanya menyisipkan ke chain.
+  - Urutan validasi mudah diubah tanpa mengubah kelas validator.
+
+Kelas yang terlibat:
+  ValidationHandler, LoginValidator, DeadlineValidator,
+  FileFormatValidator, FileSizeValidator
+
+========================================
+HUBUNGAN ANTAR DESIGN PATTERN:
+========================================
+
+Abstract Factory
+  --> Menciptakan User (Student, Lecturer, Admin) yang menjadi aktor semua fitur
+  --> Menciptakan komponen UI (Light/Dark) untuk konsistensi tampilan
+
+Decorator (OTPDecorator)
+  --> Membungkus BasicAuth
+  --> Hasilnya diverifikasi oleh LoginValidator (Chain of Responsibility)
+
+Factory Method (NotifFactory)
+  --> Digunakan oleh DeadlineNotifier (Observer) untuk buat notifikasi
+  --> Channel dipilih berdasarkan preferensi di UI_PREFERENCE
+
+Observer (Assignment --> DeadlineNotifier)
+  --> Dipicu saat Command Pattern (CreateTaskCommand/EditTaskCommand)
+      mengubah deadline tugas
+
+Command Pattern (CommandManager)
+  --> Mencatat setiap aksi ke ActivityLogger (Singleton)
+  --> Mendukung Undo/Redo dengan undoStack dan redoStack
+
+State Pattern (SubmissionContext)
+  --> Memperbarui status submission setelah Chain of Responsibility
+      berhasil memvalidasi semua persyaratan
+
+Strategy Pattern
+  --> GradingStrategy : digunakan GradeService saat dosen menilai
+  --> StorageStrategy : digunakan saat SubmissionContext menyimpan data
+  --> ExportStrategy  : digunakan Admin/Dosen saat ekspor laporan
+
+Singleton (ActivityLogger)
+  --> Cross-cutting concern yang digunakan semua pattern lain
+  --> Setiap pattern memanggil ActivityLogger.getInstance().log() untuk audit
+
+================================================================================
+BAGIAN 8: KONSEP CLEAN CODE YANG DITERAPKAN
+================================================================================
+
+SmartCampus menerapkan prinsip-prinsip Clean Code dari Robert C. Martin ("Uncle
+Bob") dan diperkuat dengan SOLID Principles.
+
+========================================
+PRINSIP 1: MEANINGFUL NAMES (Penamaan yang Bermakna)
+========================================
+Implementasi:
+  - Nama kelas, metode, dan variabel deskriptif dan self-explanatory.
+  - Tidak ada singkatan ambigu: "executeGrading" bukan "calc" atau "process".
+  - Nama mencerminkan tujuan dengan tepat.
+
+Contoh Buruk:
+  public String calc(double s, int m) { ... }
+  // s apa? m apa? 1, 2, 3 magic numbers?
+
+Contoh Baik:
+  public String executeGrading(double rawScore) { ... }
+  public void notifyObservers() { ... }
+  public boolean authenticate() { ... }
+
+========================================
+PRINSIP 2: SINGLE RESPONSIBILITY PRINCIPLE (SRP)
+========================================
+Implementasi:
+  - Setiap kelas memiliki tepat satu alasan untuk berubah.
+  - GradeService HANYA menghitung nilai (tidak simpan, tidak kirim notif).
+  - ActivityLogger HANYA mencatat aktivitas (tidak menganalisis log).
+  - Setiap ValidationHandler HANYA memvalidasi satu kondisi.
+
+Contoh:
+  // Buruk: satu metode melakukan banyak hal
+  void submitTask(file, user, assignment) {
+    validateLogin(user);
+    checkDeadline(assignment);
+    checkFileFormat(file);
+    checkFileSize(file);
+    saveFile(file);
+    updateProgress();
+    sendNotification();
+    logActivity();
+  }
+
+  // Baik: setiap kelas satu tanggung jawab
+  class LoginValidator    { void handle(req) { ... } }
+  class DeadlineValidator { void handle(req) { ... } }
+  class FileFormatValidator { void handle(req) { ... } }
+  class FileSizeValidator { void handle(req) { ... } }
+
+========================================
+PRINSIP 3: OPEN/CLOSED PRINCIPLE (OCP)
+========================================
+Implementasi:
+  - Sistem terbuka untuk ekstensi tetapi tertutup untuk modifikasi.
+  - Tambah metode penilaian baru = tambah kelas baru (implements GradingStrategy).
+    Tidak mengubah GradeService, NumericGrading, LetterGrading, dsb.
+  - Tambah channel notifikasi baru = tambah subclass NotifFactory baru.
+    Tidak mengubah DeadlineNotifier atau Assignment.
+  - Tambah format ekspor baru = tambah kelas baru (implements ExportStrategy).
+
+========================================
+PRINSIP 4: DON'T REPEAT YOURSELF (DRY)
+========================================
+Implementasi:
+  - Logika validasi tidak diulang di setiap endpoint atau service.
+    ValidationHandler chain digunakan sekali untuk semua validasi submit.
+  - Singleton ActivityLogger memastikan tidak ada duplikasi kode pencatatan.
+  - Template method dalam ValidationHandler (setNext, passToNext) digunakan
+    ulang oleh semua validator.
+
+========================================
+PRINSIP 5: SMALL FUNCTIONS (Metode Kecil dan Fokus)
+========================================
+Implementasi:
+  - Setiap metode melakukan satu hal saja.
+  - Metode handle() di DeadlineValidator hanya memeriksa satu kondisi
+    (apakah deadline sudah lewat) dan mendelegasikan ke validator berikutnya.
+  - isDeadlinePassed() dipisahkan dari handle() untuk keterbacaan.
+
+Contoh:
+  public void handle(SubmitRequest request) {
+    if (isDeadlinePassed(request.getAssignment())) {
+      showErrorMessage(ERROR_MSG);
+      return;
+    }
+    passToNext(request); // delegasi ke validator berikutnya
+  }
+
+  private boolean isDeadlinePassed(Assignment assignment) {
+    return LocalDateTime.now().isAfter(assignment.getDeadline());
+  }
+
+========================================
+PRINSIP 6: DEPENDENCY INJECTION
+========================================
+Implementasi:
+  - Dependensi disuntikkan dari luar, bukan di-hardcode dalam kelas.
+  - GradeService.setStrategy(strategy): strategy diberikan dari luar.
+  - DeadlineNotifier menerima channel (NotifFactory) melalui konstruktor.
+  - Memudahkan unit testing: komponen dapat diuji dengan mock objects.
+
+Contoh:
+  // Buruk: dependensi di-hardcode
+  class GradeService {
+    private NumericGrading strategy = new NumericGrading(); // hardcoded!
+  }
+
+  // Baik: Dependency Injection
+  class GradeService {
+    private GradingStrategy strategy;
+    public void setStrategy(GradingStrategy strategy) { // disuntikkan dari luar
+      this.strategy = strategy;
+    }
+  }
+
+========================================
+PRINSIP 7: AVOID MAGIC NUMBERS (Hindari Angka Ajaib)
+========================================
+Implementasi:
+  - Semua konstanta diberi nama yang jelas dan dideklarasikan sebagai konstanta.
+  - Tidak ada angka literal tersembunyi dalam logika bisnis.
+
+Contoh Buruk:
+  if (score >= 85) return "A";     // 85 apa artinya?
+  if (sizeKb > 10240) reject();    // 10240 dari mana?
+
+Contoh Baik:
+  private static final double A_THRESHOLD = 85.0;
+  private static final int MAX_FILE_SIZE_KB = 10240;
+  private static final double MIN_PASS_SCORE = 60.0;
+
+  if (score >= A_THRESHOLD) return "A";
+  if (sizeKb > MAX_FILE_SIZE_KB) reject();
+
+========================================
+PRINSIP 8: DESCRIPTIVE ERROR MESSAGES
+========================================
+Implementasi:
+  - Pesan error yang ditampilkan deskriptif dan actionable.
+  - "Deadline sudah lewat" (bukan "Error: code 403")
+  - "Format file tidak valid" (bukan "Invalid input")
+  - "File terlalu besar, maksimal 10MB" (bukan "File error")
+  - Membantu pengguna memahami apa yang salah dan bagaimana memperbaikinya.
+
+========================================
+PRINSIP 9: CONSISTENT NAMING CONVENTION
+========================================
+Implementasi:
+  - Kelas       : PascalCase   (GradeService, ActivityLogger)
+  - Metode      : camelCase    (executeGrading, notifyObservers)
+  - Variabel    : camelCase    (rawScore, maxSizeKB)
+  - Konstanta   : UPPER_SNAKE_CASE (MAX_FILE_SIZE_KB, A_THRESHOLD)
+  - Interface   : Noun atau Adjective (GradingStrategy, TaskObserver)
+  - Abstract    : "Abstract" prefix atau nama generik (UserFactory, AuthDecorator)
+
+========================================
+PRINSIP 10: CODE COMMENTS & DOCUMENTATION
+========================================
+Implementasi:
+  - Public API didokumentasikan dengan Javadoc.
+  - Logika kompleks diberi komentar inline yang menjelaskan "mengapa",
+    bukan "apa" (kode sudah menjelaskan "apa").
+  - Chain of Responsibility, transisi state, dan logika Observer
+    diberi komentar yang menjelaskan alur secara keseluruhan.
+
+========================================
+SOLID PRINCIPLES DALAM SMARTCAMPUS:
+========================================
+
+S - Single Responsibility Principle
+  Setiap kelas punya satu alasan untuk berubah.
+  Contoh: GradeService hanya menghitung nilai; ActivityLogger hanya mencatat;
+          setiap ValidationHandler hanya memvalidasi satu kondisi.
+
+O - Open/Closed Principle
+  Terbuka untuk ekstensi, tertutup untuk modifikasi.
+  Contoh: Tambah metode penilaian = tambah kelas baru implements GradingStrategy.
+          Tambah channel notif = tambah subclass NotifFactory.
+
+L - Liskov Substitution Principle
+  Subtype dapat menggantikan base type tanpa mengubah kebenaran program.
+  Contoh: NumericGrading, LetterGrading, PredicateGrading semuanya dapat
+          menggantikan GradingStrategy dalam GradeService.
+
+I - Interface Segregation Principle
+  Interface kecil dan spesifik lebih baik dari satu interface besar.
+  Contoh: AuthService hanya authenticate(). GradingStrategy hanya calculate().
+          Tidak ada interface yang memaksa implementasi metode yang tidak diperlukan.
+
+D - Dependency Inversion Principle
+  Bergantung pada abstraksi, bukan implementasi konkret.
+  Contoh: GradeService bergantung pada GradingStrategy (interface),
+          bukan NumericGrading (kelas konkret).
+          DeadlineNotifier bergantung pada NotifFactory (abstract),
+          bukan EmailNotification langsung.
+
+================================================================================
+BAGIAN 9: HUBUNGAN ANTAR KOMPONEN (RINGKASAN INTEGRASI)
+================================================================================
+
+Berikut adalah gambaran bagaimana semua komponen saling terhubung dalam
+skenario penggunaan nyata:
+
+------------------------------------------------------------------------
+SKENARIO A: Mahasiswa Login dan Submit Tugas
+------------------------------------------------------------------------
+1. Mahasiswa membuka halaman login
+2. BasicAuth memvalidasi username + password
+3. OTPDecorator (jika aktif) menambahkan verifikasi OTP
+4. UserFactory.createUser() membuat objek Student
+5. Student masuk ke dashboard dengan hak akses yang sesuai
+6. Student memilih tugas dan memulai proses submit
+7. ValidationHandler chain memvalidasi: sesi, deadline, format, ukuran file
+8. SubmissionContext.nextState() mengubah state ke OnProgressState
+9. Student memilih Submit Final
+10. SubmissionContext.nextState() mengubah state ke CompletedState
+11. StorageStrategy.save() menyimpan data ke database
+12. ActivityLogger.getInstance().log("SUBMIT", studentId, ...) mencatat aktivitas
+13. DeadlineNotifier.update() dipicu --> mengirim notifikasi ke Dosen
+
+------------------------------------------------------------------------
+SKENARIO B: Dosen Mengelola Tugas dan Deadline
+------------------------------------------------------------------------
+1. Dosen login (BasicAuth + OTP jika aktif)
+2. UserFactory.createUser() membuat objek Lecturer
+3. Dosen membuat tugas baru via halaman Manajemen Tugas
+4. CreateTaskCommand.execute() dijalankan oleh CommandManager
+5. Command masuk ke undoStack
+6. Assignment.notifyObservers() memicu notifikasi ke semua mahasiswa terdaftar
+7. DeadlineNotifier.update() dipanggil untuk setiap mahasiswa
+8. NotifFactory membuat EmailNotification dan DashboardNotification
+9. Notifikasi dikirim dan disimpan ke tabel NOTIFICATION
+10. ActivityLogger mencatat aktivitas buat tugas
+11. Dosen menekan Undo
+12. CommandManager.undo() memanggil CreateTaskCommand.undo()
+13. Tugas dihapus dari database, command pindah ke redoStack
+
+------------------------------------------------------------------------
+SKENARIO C: Dosen Menilai Submission Mahasiswa
+------------------------------------------------------------------------
+1. Dosen memilih submission mahasiswa
+2. Dosen memilih metode penilaian: LetterGrading
+3. GradeService.setStrategy(new LetterGrading())
+4. Dosen memasukkan raw score: 78
+5. GradeService.executeGrading(78) --> LetterGrading.calculate(78) --> "B"
+6. Dosen mengkonfirmasi nilai B
+7. GRADE disimpan ke database dengan grading_strategy = "letter"
+8. ActivityLogger mencatat aktivitas penilaian
+9. NotifFactory membuat notifikasi nilai untuk mahasiswa
+
+------------------------------------------------------------------------
+SKENARIO D: Admin Mengekspor Laporan dan Melihat Log
+------------------------------------------------------------------------
+1. Admin login
+2. Admin membuka halaman Export Laporan Tugas
+3. Admin memilih format: PDF
+4. ExportStrategy = new PDFExport()
+5. ExportStrategy.export(data) menghasilkan file PDF
+6. EXPORT_LOG menyimpan riwayat ekspor
+7. ActivityLogger mencatat aktivitas ekspor
+8. Admin membuka halaman Activity Log
+9. ActivityLogger.getInstance().getLogs(filter) mengambil data
+10. Admin memfilter berdasarkan aksi "EXPORT" rentang minggu ini
+11. Sistem menampilkan daftar log yang sesuai filter
+
+================================================================================
+PENUTUP
+================================================================================
+
+Dokumen ini merangkum seluruh konten dari laporan Desain Perangkat Lunak
+SmartCampus secara detail dan komprehensif. Sistem SmartCampus mengimplementasikan
+arsitektur yang bersih dengan penerapan 8 design pattern utama (melebihi
+persyaratan minimal 4) dan 1 pattern pendukung, serta menerapkan prinsip-prinsip
+clean code dan SOLID Principles secara konsisten.
+
+Verifikasi konsistensi antar diagram:
+  - Semua 12 fitur tercermin dalam use case diagram
+  - Semua 12 fitur memiliki activity diagram masing-masing
+  - ERD mendukung seluruh entitas dan relasi yang dibutuhkan fitur-fitur tersebut
+  - Class diagram merefleksikan semua design pattern yang diimplementasikan
+  - ERD dan Class diagram konsisten: setiap tabel di ERD punya representasi
+    di class diagram dan sebaliknya
+
+Manfaat arsitektur yang dirancang:
+  1. Extensible  : penambahan fitur baru minimal mengubah kode yang ada
+  2. Testable    : setiap komponen dapat diuji secara terisolasi
+  3. Maintainable: kode mudah dipahami dan diubah oleh pengembang lain
+  4. Scalable    : arsitektur layered memudahkan distribusi ke tim berbeda
+  5. Traceable   : ActivityLogger memastikan audit trail yang lengkap
+
+================================================================================
+Mata Kuliah: Pola Desain Perangkat Lunak
+SmartCampus - Sistem Manajemen Tugas dan Proyek Mahasiswa
+================================================================================
