@@ -62,4 +62,35 @@
         @endif
     </div>
 </div>
+{{-- NOTIFICATION FOR DEADLINE --}}
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bell me-2"></i>Notifikasi Terbaru</h6>
+    </div>
+    <div class="card-body p-0">
+        @if(isset($notifications) && $notifications->count() > 0)
+            <div class="list-group list-group-flush">
+                @foreach($notifications as $notif)
+                    <div class="list-group-item d-flex justify-content-between align-items-start py-3 {{ !$notif->is_read ? 'bg-light' : '' }}">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold {{ !$notif->is_read ? 'text-primary' : 'text-dark' }}">
+                                {{ $notif->message }}
+                            </div>
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ $notif->created_at->diffForHumans() }}</small>
+                        </div>
+                        @if(!$notif->is_read)
+                            <span class="badge bg-danger rounded-pill">Baru</span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="p-4 text-center text-muted">
+                <i class="bi bi-bell-slash fs-3 d-block mb-2"></i>
+                Tidak ada notifikasi saat ini.
+            </div>
+        @endif
+    </div>
+</div>
+{{-- NOTIFICATION FOR DEADLINE --}}
 @endsection
