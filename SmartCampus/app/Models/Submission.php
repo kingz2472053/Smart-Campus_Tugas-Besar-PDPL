@@ -49,4 +49,26 @@ class Submission extends Model
     {
         return $this->belongsTo(Grade::class)->latestOfMany();
     }
-}
+    
+    /**
+     * Membaca status string dari DB ke bentuk objek State Pattern
+     */
+    public function getStateAttribute()
+    {
+        return match ($this->status) {
+            'submitted' => new \App\Services\Submission\SubmittedState(),
+            'graded' => new \App\Services\Submission\GradedState(),
+            default => new \App\Services\Submission\DraftState(),
+        };
+    }
+
+    public function submitTask(): void
+    {
+        $this->state->submit($this);
+    }
+
+    public function gradeTask(): void
+    {
+        $this->state->grade($this);
+    }
+
