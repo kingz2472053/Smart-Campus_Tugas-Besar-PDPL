@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Notification; // Tambahkan import ini
 
 /**
  * DashboardController — Mengarahkan pengguna ke dashboard sesuai role.
@@ -41,6 +42,10 @@ class DashboardController extends Controller
             'enrollmentCount' => $student ? $student->enrollments()->where('status', 'active')->count() : 0,
             'submissionCount' => $student ? $student->submissions()->count() : 0,
             'pendingCount' => $student ? $student->submissions()->where('progress', 'not_started')->count() : 0,
+            'notifications' => Notification::where('user_id', $user->id)
+                                ->orderBy('created_at', 'desc')
+                                ->limit(5)
+                                ->get(),
         ];
 
         return view('dashboard.student', $data);

@@ -371,6 +371,28 @@ class SmartCampusSeeder extends Seeder
             'created_by' => $maya->id,
         ]);
 
+        // 9. [TESTING] Proyek PL — Tugas Mockup (Deadline H-1 / Besok)
+        // Dibuat khusus untuk mengetes fitur Observer Pattern (Deadline Reminder)
+        $testAssignment = Assignment::create([
+            'course_id' => $proyekPL->id,
+            'title' => 'Tugas Testing: Rancangan Mockup UI/UX',
+            'description' => "Tugas ini diset deadline besok untuk memicu Observer Pattern.",
+            'deadline' => now()->addDay()->setTime(23, 59, 0), // Besok jam 23:59
+            'max_score' => 100,
+            'file_format_allowed' => 'pdf,fig,png',
+            'max_file_size_kb' => 10240,
+            'created_by' => $maya->id,
+        ]);
+
+        // Buat record submission untuk Dave dengan progress 'not_started' 
+        // agar terdeteksi oleh sistem pengecek deadline
+        Submission::create([
+            'assignment_id' => $testAssignment->id,
+            'student_id'    => $dave->student->id,
+            'status'        => 'draft',
+            'progress'      => 'not_started',
+        ]);
+
         // ══════════════════════════════════════
         // Buat Dummy Submissions (mahasiswa submit tugas)
         // ══════════════════════════════════════
