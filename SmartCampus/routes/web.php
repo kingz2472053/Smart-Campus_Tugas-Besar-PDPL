@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\SubmissionController;
 use Illuminate\Support\Facades\Route;
 
 // ──────────────────────────────────────
@@ -34,16 +36,25 @@ Route::middleware('auth')->group(function () {
 
     // ── Mahasiswa Routes ──
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
-        // Phase 2: Submit tugas, progress tracking, daftar MK
+        // Manajemen Tugas (Read-Only + Submit)
+        Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+
+        // Submission (Upload tugas)
+        Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('submissions.store');
+        Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
     });
 
     // ── Dosen Routes ──
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
-        // Phase 2: CRUD tugas, penilaian, deadline
+        // Manajemen Tugas (Full CRUD via Command Pattern)
+        Route::resource('assignments', AssignmentController::class);
     });
 
     // ── Admin Routes ──
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        // Phase 2: Kelola user, enrollment, MK, activity log
+        // Manajemen Tugas (Read-Only Overview)
+        Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
     });
 });

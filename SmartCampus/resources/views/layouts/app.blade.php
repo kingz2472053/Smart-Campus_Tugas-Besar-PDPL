@@ -239,11 +239,8 @@
             {{-- Mahasiswa Menu --}}
             @if(Auth::user()->role === 'mahasiswa')
                 <div class="sc-nav-section-title mt-3">Akademik</div>
-                <a href="#" class="sc-nav-link">
+                <a href="{{ route('mahasiswa.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-journal-text"></i> Daftar Tugas
-                </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-upload"></i> Submit Tugas
                 </a>
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-book"></i> Mata Kuliah
@@ -256,7 +253,7 @@
             {{-- Dosen Menu --}}
             @if(Auth::user()->role === 'dosen')
                 <div class="sc-nav-section-title mt-3">Manajemen</div>
-                <a href="#" class="sc-nav-link">
+                <a href="{{ route('dosen.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-plus"></i> Kelola Tugas
                 </a>
                 <a href="#" class="sc-nav-link">
@@ -273,6 +270,9 @@
             {{-- Admin Menu --}}
             @if(Auth::user()->role === 'admin')
                 <div class="sc-nav-section-title mt-3">Administrasi</div>
+                <a href="{{ route('admin.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
+                    <i class="bi bi-clipboard-data"></i> Semua Tugas
+                </a>
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-person-gear"></i> Kelola Pengguna
                 </a>
