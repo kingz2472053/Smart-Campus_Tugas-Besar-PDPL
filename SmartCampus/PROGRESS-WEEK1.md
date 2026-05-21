@@ -1,6 +1,5 @@
 # PROGRESS WEEK 1 — SmartCampus
-**Mata Kuliah:** Pola Desain Perangkat Lunak  
-**Anggota:** Francisco Valentino (2472040)  
+**Mata Kuliah:** Pola Desain Perangkat Lunak   
 **Branch:** `Week-1---Francisco-Valentino`  
 **Tanggal:** 8 Mei 2026  
 
@@ -321,11 +320,3 @@ SmartCampus/
         ├── lecturer.blade.php                    [NEW] Dashboard dosen
         └── admin.blade.php                       [NEW] Dashboard admin
 ```
-
----
-
-## TODO — Week 2
-
-- [ ] Halaman Activity Log lengkap (filter user, aksi, tanggal) — Fitur 7
-- [ ] Polish OTP flow end-to-end — Fitur 12
-- [ ] Integrasi dengan fitur anggota lain
