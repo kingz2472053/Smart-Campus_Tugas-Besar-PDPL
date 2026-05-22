@@ -18,7 +18,10 @@ return new class extends Migration
             $table->integer('file_size_kb')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->enum('status', ['draft', 'submitted', 'late'])->default('draft');
-            $table->enum('progress', ['not_started', 'on_progress', 'completed'])->default('not_started');
+            
+            // PERUBAHAN: Menggunakan integer agar sesuai dengan State Pattern Calvin
+            $table->integer('progress')->default(0); 
+            
             $table->timestamps();
 
             $table->unique(['assignment_id', 'student_id']);

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
+use function Laravel\Prompts\progress;
+
 /**
  * SubmissionController — Mengelola pengumpulan tugas oleh mahasiswa.
  *
@@ -85,7 +87,7 @@ class SubmissionController extends Controller
                 'file_size_kb' => (int) ceil($file->getSize() / 1024),
                 'submitted_at' => now(),
                 'status'       => $status,
-                'progress'     => 'on_progress',
+                'progress'     => 50,
             ]
         );
 
@@ -160,6 +162,7 @@ class SubmissionController extends Controller
             'file_size_kb' => (int) ceil($file->getSize() / 1024),
             'submitted_at' => now(),
             'status'       => $status,
+            'progress'     => 50,
         ]);
 
         // Log aktivitas

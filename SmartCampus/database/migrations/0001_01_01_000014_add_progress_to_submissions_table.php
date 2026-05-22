@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('submissions', function (Blueprint $table) {
-            $table->integer('progress')->default(0)->after('status');
-        });
+        // Tambahkan kolom 'progress' ke tabel 'submissions'
+        // Schema::table('submissions', function (Blueprint $table) {
+        //     $table->integer('progress')->default(0)->after('status');
+        // });
     }
 
     public function down(): void
     {
-        Schema::table('submissions', function (Blueprint $table) {
-            $table->dropColumn('progress');
-        });
+        // Hapus kolom 'progress' jika rollback
+        // Schema::table('submissions', function (Blueprint $table) {
+        //     $table->dropColumn('progress');
+        // });
     }
 };
