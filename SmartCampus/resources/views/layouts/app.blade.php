@@ -245,7 +245,7 @@
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="#" class="sc-nav-link">
+                <a href="{{ route('notifications.index') }}" class="sc-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                     <i class="bi bi-bell"></i> Notifikasi
                 </a>
                 <div class="sc-nav-section-title mt-3">Riwayat</div>
@@ -328,6 +328,32 @@
                 <span class="sc-topbar-title">@yield('title', 'Dashboard')</span>
             </div>
             <div class="sc-user-info">
+                <!-- Dropdown Lonceng Notifikasi -->
+                <div class="dropdown me-2" id="loncengDropdown">
+                    <button class="btn btn-link text-secondary position-relative p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="loncengBtn">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge" style="font-size: 0.6rem; padding: 0.25em 0.5em;">
+                            0
+                        </span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0" style="width: 320px; z-index: 1100;" aria-labelledby="loncengBtn">
+                        <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                            <span class="fw-semibold text-dark small" style="font-size: 0.85rem;">Notifikasi Baru</span>
+                            <button id="markAllReadLonceng" class="btn btn-link text-primary p-0 small text-decoration-none d-none" style="font-size: 0.75rem;">Tandai semua terbaca</button>
+                        </div>
+                        <div class="list-group list-group-flush overflow-auto" style="max-height: 250px;" id="loncengNotifList">
+                            <!-- Loader -->
+                            <div class="text-center py-3 text-muted" id="loncengLoader">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <span class="ms-1 small" style="font-size: 0.8rem;">Memuat...</span>
+                            </div>
+                        </div>
+                        <div class="p-2 border-top text-center bg-light rounded-bottom-3">
+                            <a href="{{ route('notifications.index') }}" class="small text-primary text-decoration-none fw-semibold" style="font-size: 0.8rem;">Lihat Semua Notifikasi</a>
+                        </div>
+                    </div>
+                </div>
+
                 <span class="sc-role-badge bg-primary bg-opacity-10 text-primary">{{ ucfirst(Auth::user()->role) }}</span>
             </div>
         </header>
@@ -355,6 +381,129 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Notification Lonceng AJAX Global Script -->
+    <script>
+    function refreshLonceng() {
+        const badge = document.getElementById('notifBadge');
+        const listContainer = document.getElementById('loncengNotifList');
+        const markAllBtn = document.getElementById('markAllReadLonceng');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        fetch('{{ route("notifications.unread") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update badge count
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.classList.remove('d-none');
+                    markAllBtn.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                    badge.textContent = '0';
+                    markAllBtn.classList.add('d-none');
+                }
+
+                // Update list
+                listContainer.innerHTML = '';
+                if (data.notifications.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-bell-slash fs-5 d-block mb-1"></i>
+                            Tidak ada notifikasi baru.
+                        </div>
+                    `;
+                } else {
+                    data.notifications.forEach(notif => {
+                        const icon = notif.channel === 'email' ? 'bi-envelope-fill text-info bg-info bg-opacity-10' : 'bi-layout-text-window-reverse text-primary bg-primary bg-opacity-10';
+                        const title = (notif.assignment && notif.assignment.course) 
+                            ? `${notif.assignment.course.name} - ${notif.assignment.title}` 
+                            : (notif.assignment ? notif.assignment.title : 'Pemberitahuan');
+                        const notifItem = document.createElement('div');
+                        notifItem.className = 'list-group-item list-group-item-action p-3 border-0 border-bottom d-flex align-items-start gap-2 position-relative';
+                        notifItem.style.cursor = 'pointer';
+                        
+                        notifItem.innerHTML = `
+                            <span class="avatar-icon rounded-circle p-1.5 d-flex align-items-center justify-content-center ${icon}" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                                <i class="bi ${notif.channel === 'email' ? 'bi-envelope' : 'bi-layout-text-window-reverse'}"></i>
+                            </span>
+                            <div class="flex-grow-1 pe-4" onclick="window.location.href='{{ route("notifications.index") }}'">
+                                <div class="fw-semibold text-dark text-truncate" style="font-size: 0.8rem; max-width: 200px;">${title}</div>
+                                <div class="text-secondary text-wrap" style="font-size: 0.75rem; line-height: 1.3;">${notif.message}</div>
+                            </div>
+                            <button class="btn btn-link text-primary p-0 position-absolute end-0 top-0 mt-3 me-2 lonceng-mark-read" data-id="${notif.id}" title="Tandai Terbaca" style="z-index: 10;">
+                                <i class="bi bi-check-circle-fill" style="font-size: 1rem;"></i>
+                            </button>
+                        `;
+                        listContainer.appendChild(notifItem);
+                    });
+
+                    // Event handler tandai terbaca per notifikasi di lonceng
+                    document.querySelectorAll('.lonceng-mark-read').forEach(btn => {
+                        btn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const id = this.getAttribute('data-id');
+                            fetch(`/notifications/${id}/read`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(res => {
+                                if (res.success) {
+                                    refreshLonceng();
+                                    // Jika kita sedang berada di halaman index notifikasi, refresh juga halamannya
+                                    if (window.location.pathname.startsWith('/notifications')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching notifications:', err);
+                listContainer.innerHTML = '<div class="text-center py-3 text-danger small">Gagal memuat notifikasi.</div>';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Fetch notifikasi saat halaman load
+        refreshLonceng();
+
+        // Tombol tandai semua terbaca di lonceng dropdown
+        const markAllBtn = document.getElementById('markAllReadLonceng');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        markAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fetch('/notifications/read-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.success) {
+                    refreshLonceng();
+                    if (window.location.pathname.startsWith('/notifications')) {
+                        window.location.reload();
+                    }
+                }
+            });
+        });
+
+        // Set interval untuk polling notifikasi berkala (misal tiap 60 detik)
+        setInterval(refreshLonceng, 60000);
+    });
+    </script>
+
     @stack('scripts')
 </body>
 </html>
