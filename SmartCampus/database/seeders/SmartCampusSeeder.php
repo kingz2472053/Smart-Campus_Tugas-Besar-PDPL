@@ -27,13 +27,15 @@ class SmartCampusSeeder extends Seeder
         // PHASE 1: Users (Abstract Factory Pattern)
         // ══════════════════════════════════════
 
-        // ── Admin (1 akun) ──
+        // ── Admin (1 akun, OTP enabled untuk demo Decorator Pattern) ──
         $adminFactory = UserFactoryManager::getFactory('admin');
-        $adminFactory->createUser([
+        $admin = $adminFactory->createUser([
             'name' => 'Admin SmartCampus',
-            'email' => 'admin@smartcampus.ac.id',
+            'email' => 'smartcampus.pdpl+admin@gmail.com',
             'password' => 'password',
         ]);
+        // Aktifkan OTP untuk admin (demo Fitur 12: Autentikasi Bertingkat)
+        $admin->update(['otp_enabled' => true]);
 
         // ── Dosen (7 akun — 1 dosen per mata kuliah) ──
         $lecturerFactory = UserFactoryManager::getFactory('dosen');

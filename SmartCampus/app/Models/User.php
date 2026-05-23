@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'otp_code',
         'otp_expiry',
+        'otp_enabled',
         'is_active',
     ];
 
@@ -50,6 +51,7 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'otp_expiry' => 'datetime',
+            'otp_enabled' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -109,6 +111,6 @@ class User extends Authenticatable
 
     public function hasOtpEnabled(): bool
     {
-        return !is_null($this->otp_code) && !is_null($this->otp_expiry);
+        return (bool) $this->otp_enabled;
     }
 }

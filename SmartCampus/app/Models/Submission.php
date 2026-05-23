@@ -71,4 +71,4 @@ class Submission extends Model
     {
         $this->state->grade($this);
     }
-
+}
