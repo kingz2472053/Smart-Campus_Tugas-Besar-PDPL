@@ -8,9 +8,9 @@
 ---
 
 ## Kontributor Kelompok
-1. **Francisco Valentino (21720XX)** — Riwayat Aktivitas, OTP Decorator, Login & Role Management
-2. **Dave Andrew (2172015)** — Penilaian Otomatis (Strategy Pattern)
-3. **Teofilus Juan P. (21720XX)** — Notifikasi MultiChannel (Factory Method Pattern)
+1. **Francisco Valentino (2472040)** — Riwayat Aktivitas, OTP Decorator, Login & Role Management
+2. **Dave Andrew (2472015)** — Penilaian Otomatis (Strategy Pattern)
+3. **Teofilus Juan P. (2472053)** — Notifikasi MultiChannel (Factory Method Pattern)
 
 ---
 
