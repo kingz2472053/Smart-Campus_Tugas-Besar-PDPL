@@ -248,6 +248,10 @@
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-bell"></i> Notifikasi
                 </a>
+                <div class="sc-nav-section-title mt-3">Riwayat</div>
+                <a href="{{ route('mahasiswa.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.activity-logs.*') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history"></i> Riwayat Aktivitas
+                </a>
             @endif
 
             {{-- Dosen Menu --}}
@@ -264,6 +268,10 @@
                 </a>
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-file-earmark-arrow-down"></i> Export Laporan
+                </a>
+                <div class="sc-nav-section-title mt-3">Riwayat</div>
+                <a href="{{ route('dosen.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.activity-logs.*') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history"></i> Riwayat Aktivitas
                 </a>
             @endif
 
@@ -282,7 +290,7 @@
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-person-check"></i> Kelola Enrollment
                 </a>
-                <a href="#" class="sc-nav-link">
+                <a href="{{ route('admin.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> Activity Log
                 </a>
                 <a href="#" class="sc-nav-link">
