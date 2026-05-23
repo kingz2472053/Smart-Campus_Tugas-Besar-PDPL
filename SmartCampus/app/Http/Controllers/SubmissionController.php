@@ -245,4 +245,26 @@ class SubmissionController extends Controller
 
         return $sizeKb . ' KB';
     }
+
+    public function storeGrade(Request $request, Submission $submission)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'raw_score' => 'required|numeric|min:0|max:100',
+            'strategy'  => 'required|in:numeric,letter,predicate',
+        ]);
+
+        // 2. Pemilihan Strategy (Strategy Pattern)
+        $strategy = match($request->strategy) {
+            'letter'    => new \App\Services\Grading\LetterGradingStrategy(),
+            'predicate' => new \App\Services\Grading\PredicateGradingStrategy(),
+            default     => new \App\Services\Grading\NumericGradingStrategy(),
+        };
+
+        // 3. Eksekusi melalui Service
+        $gradingService = new \App\Services\Grading\GradingService();
+        $gradingService->executeGrading($submission, $request->raw_score, $strategy);
+
+        return back()->with('success', 'Tugas berhasil dinilai!');
+    }
 }

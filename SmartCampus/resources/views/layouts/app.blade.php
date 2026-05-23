@@ -256,9 +256,9 @@
                 <a href="{{ route('dosen.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-plus"></i> Kelola Tugas
                 </a>
-                <a href="#" class="sc-nav-link">
+                {{-- <a href="{{ route('dosen.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.assignments.index') ? 'active' : '' }}">
                     <i class="bi bi-check2-square"></i> Penilaian
-                </a>
+                </a> --}}
                 <a href="#" class="sc-nav-link">
                     <i class="bi bi-people"></i> Monitor Mahasiswa
                 </a>
