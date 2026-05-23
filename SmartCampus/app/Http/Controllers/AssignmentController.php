@@ -57,7 +57,7 @@ class AssignmentController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Assignment::with(['course', 'creator']);
+        $query = Assignment::with(['course', 'creator', 'submissions.latestGrade']);
 
         // Role-based query filtering
         $query = $this->applyRoleFilter($query, $user);

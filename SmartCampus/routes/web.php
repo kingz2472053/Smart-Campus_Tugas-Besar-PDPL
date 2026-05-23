@@ -49,6 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
+        Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
+             ->name('submissions.grade');
     });
 
     // ── Admin Routes ──

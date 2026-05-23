@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('file_format')->nullable();
             $table->integer('file_size_kb')->nullable();
             $table->timestamp('submitted_at')->nullable();
-            $table->enum('status', ['draft', 'submitted', 'late'])->default('draft');
+            $table->enum('status', ['draft', 'submitted', 'late', 'graded'])->default('draft');
             
             // PERUBAHAN: Menggunakan integer agar sesuai dengan State Pattern Calvin
             $table->integer('progress')->default(0); 

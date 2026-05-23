@@ -98,6 +98,7 @@
                                     <th style="font-size:0.8rem">File</th>
                                     <th style="font-size:0.8rem">Waktu Submit</th>
                                     <th style="font-size:0.8rem;text-align:center">Status</th>
+                                    <th style="font-size:0.8rem; text-align:center">Nilai / Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -124,6 +125,20 @@
                                                 };
                                             @endphp
                                             <span class="badge {{ $statusBadge }}" style="font-size:0.7rem">{{ ucfirst($sub->status) }}</span>
+                                        </td>
+                                        <td style="text-align:center">
+                                            @if($sub->status === 'graded')
+                                                {{-- Tampilkan hasil nilai jika sudah dinilai --}}
+                                                <span class="badge bg-info text-dark">
+                                                    {{ $sub->latestGrade->result ?? 'Dinilai' }}
+                                                </span>
+                                            @else
+                                                {{-- Tombol trigger modal --}}
+                                                <button type="button" class="btn btn-sm btn-primary" 
+                                                        data-bs-toggle="modal" data-bs-target="#gradeModal{{ $sub->id }}">
+                                                    <i class="bi bi-award me-1"></i> Nilai
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -267,4 +282,37 @@
     </div>
 </div>
 @endif
+@foreach($assignment->submissions as $sub)
+<div class="modal fade" id="gradeModal{{ $sub->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ route('dosen.submissions.grade', $sub->id) }}" method="POST">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Penilaian: {{ $sub->student->user->name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Raw Score (0-100)</label>
+                        <input type="number" name="raw_score" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Strategi Penilaian</label>
+                        <select name="strategy" class="form-select">
+                            <option value="numeric">Numeric (Angka)</option>
+                            <option value="letter">Letter (Huruf A-E)</option>
+                            <option value="predicate">Predicate (Lulus/Tidak)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan Nilai</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@endforeach
 @endsection

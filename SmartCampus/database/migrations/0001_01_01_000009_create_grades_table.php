@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('submission_id')->constrained('submissions')->onDelete('cascade');
             $table->foreignId('graded_by')->constrained('users')->onDelete('cascade');
-            $table->enum('grading_strategy', ['numeric', 'letter', 'predicate'])->default('numeric');
+            $table->string('grading_strategy', 255)->default('NumericGradingStrategy');
             $table->decimal('raw_score', 5, 2);
             $table->string('result');
             $table->timestamp('graded_at')->useCurrent();
