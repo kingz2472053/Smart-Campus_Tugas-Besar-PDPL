@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
+use function Laravel\Prompts\progress;
+
 /**
  * SubmissionController — Mengelola pengumpulan tugas oleh mahasiswa.
  *
@@ -85,7 +87,7 @@ class SubmissionController extends Controller
                 'file_size_kb' => (int) ceil($file->getSize() / 1024),
                 'submitted_at' => now(),
                 'status'       => $status,
-                'progress'     => 'on_progress',
+                'progress'     => 50,
             ]
         );
 
@@ -160,6 +162,7 @@ class SubmissionController extends Controller
             'file_size_kb' => (int) ceil($file->getSize() / 1024),
             'submitted_at' => now(),
             'status'       => $status,
+            'progress'     => 50,
         ]);
 
         // Log aktivitas
@@ -241,5 +244,27 @@ class SubmissionController extends Controller
         }
 
         return $sizeKb . ' KB';
+    }
+
+    public function storeGrade(Request $request, Submission $submission)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'raw_score' => 'required|numeric|min:0|max:100',
+            'strategy'  => 'required|in:numeric,letter,predicate',
+        ]);
+
+        // 2. Pemilihan Strategy (Strategy Pattern)
+        $strategy = match($request->strategy) {
+            'letter'    => new \App\Services\Grading\LetterGradingStrategy(),
+            'predicate' => new \App\Services\Grading\PredicateGradingStrategy(),
+            default     => new \App\Services\Grading\NumericGradingStrategy(),
+        };
+
+        // 3. Eksekusi melalui Service
+        $gradingService = new \App\Services\Grading\GradingService();
+        $gradingService->executeGrading($submission, $request->raw_score, $strategy);
+
+        return back()->with('success', 'Tugas berhasil dinilai!');
     }
 }

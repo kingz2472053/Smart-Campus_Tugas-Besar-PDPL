@@ -27,13 +27,15 @@ class SmartCampusSeeder extends Seeder
         // PHASE 1: Users (Abstract Factory Pattern)
         // ══════════════════════════════════════
 
-        // ── Admin (1 akun) ──
+        // ── Admin (1 akun, OTP enabled untuk demo Decorator Pattern) ──
         $adminFactory = UserFactoryManager::getFactory('admin');
-        $adminFactory->createUser([
+        $admin = $adminFactory->createUser([
             'name' => 'Admin SmartCampus',
-            'email' => 'admin@smartcampus.ac.id',
+            'email' => 'smartcampus.pdpl+admin@gmail.com',
             'password' => 'password',
         ]);
+        // Aktifkan OTP untuk admin (demo Fitur 12: Autentikasi Bertingkat)
+        $admin->update(['otp_enabled' => true]);
 
         // ── Dosen (7 akun — 1 dosen per mata kuliah) ──
         $lecturerFactory = UserFactoryManager::getFactory('dosen');
@@ -373,25 +375,27 @@ class SmartCampusSeeder extends Seeder
 
         // 9. [TESTING] Proyek PL — Tugas Mockup (Deadline H-1 / Besok)
         // Dibuat khusus untuk mengetes fitur Observer Pattern (Deadline Reminder)
-        $testAssignment = Assignment::create([
-            'course_id' => $proyekPL->id,
-            'title' => 'Tugas Testing: Rancangan Mockup UI/UX',
-            'description' => "Tugas ini diset deadline besok untuk memicu Observer Pattern.",
-            'deadline' => now()->addDay()->setTime(23, 59, 0), // Besok jam 23:59
-            'max_score' => 100,
-            'file_format_allowed' => 'pdf,fig,png',
-            'max_file_size_kb' => 10240,
-            'created_by' => $maya->id,
-        ]);
+        if (Assignment::where('title', 'Tugas Testing: Rancangan Mockup UI/UX')->doesntExist()) {
+            $testAssignment = Assignment::create([
+                'course_id' => $proyekPL->id,
+                'title' => 'Tugas Testing: Rancangan Mockup UI/UX',
+                'description' => "Tugas ini diset deadline besok untuk memicu Observer Pattern.",
+                'deadline' => now()->addDay()->setTime(23, 59, 0),
+                'max_score' => 100,
+                'file_format_allowed' => 'pdf,fig,png',
+                'max_file_size_kb' => 10240,
+                'created_by' => $maya->id,
+            ]);
 
         // Buat record submission untuk Dave dengan progress 'not_started' 
         // agar terdeteksi oleh sistem pengecek deadline
-        Submission::create([
-            'assignment_id' => $testAssignment->id,
-            'student_id'    => $dave->student->id,
-            'status'        => 'draft',
-            'progress'      => 'not_started',
-        ]);
+            Submission::create([
+                'assignment_id' => $testAssignment->id,
+                'student_id'    => $dave->student->id,
+                'status'        => 'draft',
+                'progress'      => 0, 
+            ]);
+        }
 
         // ══════════════════════════════════════
         // Buat Dummy Submissions (mahasiswa submit tugas)
@@ -419,7 +423,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 2048,
                 'submitted_at'  => now()->subWeeks(3),
                 'status'        => 'submitted',
-                'progress'      => 'completed',
+                'progress'      => '100',
             ]);
             Submission::create([
                 'assignment_id' => $a1->id,
@@ -430,7 +434,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 1536,
                 'submitted_at'  => now()->subWeeks(2)->subDays(1),
                 'status'        => 'submitted',
-                'progress'      => 'completed',
+                'progress'      => '100',
             ]);
             Submission::create([
                 'assignment_id' => $a1->id,
@@ -441,7 +445,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 4096,
                 'submitted_at'  => now()->subDays(10),
                 'status'        => 'late',
-                'progress'      => 'completed',
+                'progress'      => '100',
             ]);
         }
 
@@ -457,7 +461,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 3072,
                 'submitted_at'  => now()->subDays(6),
                 'status'        => 'submitted',
-                'progress'      => 'completed',
+                'progress'      => '100',
             ]);
             Submission::create([
                 'assignment_id' => $a2->id,
@@ -468,7 +472,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 5120,
                 'submitted_at'  => now()->subDays(3),
                 'status'        => 'late',
-                'progress'      => 'completed',
+                'progress'      => '100',
             ]);
         }
 
@@ -484,7 +488,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 1024,
                 'submitted_at'  => now()->subHours(5),
                 'status'        => 'submitted',
-                'progress'      => 'on_progress',
+                'progress'      => '50',
             ]);
             Submission::create([
                 'assignment_id' => $a3->id,
@@ -495,7 +499,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 8192,
                 'submitted_at'  => now()->subHours(2),
                 'status'        => 'submitted',
-                'progress'      => 'on_progress',
+                'progress'      => '50',
             ]);
         }
 
@@ -511,7 +515,7 @@ class SmartCampusSeeder extends Seeder
                 'file_size_kb'  => 15360,
                 'submitted_at'  => now()->subDays(1),
                 'status'        => 'submitted',
-                'progress'      => 'on_progress',
+                'progress'      => '50',
             ]);
         }
     }

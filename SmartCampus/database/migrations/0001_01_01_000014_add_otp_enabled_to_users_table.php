@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Menambahkan kolom otp_enabled ke tabel users.
+ * Digunakan oleh Decorator Pattern (OTPDecorator)
+ * untuk menentukan apakah user memerlukan verifikasi OTP.
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('otp_enabled')->default(false)->after('otp_expiry');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('otp_enabled');
+        });
+    }
+};

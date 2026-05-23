@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Services\Submission\DraftState; // Update import
+use App\Services\Submission\GradedState; // Update import
+use App\Services\Submission\SubmittedState; // Kamu perlu buat ini
 
 class Submission extends Model
 {
@@ -45,9 +48,9 @@ class Submission extends Model
     /**
      * Get the latest grade for this submission.
      */
-    public function latestGrade(): BelongsTo
+    public function latestGrade() 
     {
-        return $this->belongsTo(Grade::class)->latestOfMany();
+        return $this->hasOne(Grade::class)->latest();
     }
     
     /**
@@ -55,10 +58,11 @@ class Submission extends Model
      */
     public function getStateAttribute()
     {
-        return match ($this->status) {
-            'submitted' => new \App\Services\Submission\SubmittedState(),
-            'graded' => new \App\Services\Submission\GradedState(),
-            default => new \App\Services\Submission\DraftState(),
+        return match($this->status) {
+            'draft'     => new DraftState(),
+            'submitted' => new SubmittedState(), 
+            'graded'    => new GradedState(),
+            default     => new DraftState(),
         };
     }
 
@@ -71,4 +75,4 @@ class Submission extends Model
     {
         $this->state->grade($this);
     }
-
+}

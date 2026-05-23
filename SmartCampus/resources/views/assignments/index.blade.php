@@ -105,7 +105,12 @@
                         <th style="font-size: 0.8rem;">Mata Kuliah</th>
                         <th style="font-size: 0.8rem;">Deadline</th>
                         <th style="font-size: 0.8rem; text-align: center;">Status</th>
-                        <th style="font-size: 0.8rem; text-align: center;">Skor</th>
+                        
+                        {{-- Kolom Skor/Nilai --}}
+                        <th style="font-size: 0.8rem; text-align: center;">
+                            {{ Auth::user()->role === 'mahasiswa' ? 'Nilai Saya' : 'Skor Maks' }}
+                        </th>
+                        
                         @if(Auth::user()->role === 'admin')
                             <th style="font-size: 0.8rem;">Dosen</th>
                         @endif
@@ -160,7 +165,25 @@
                                     {{ $badgeIcon }} {{ $badgeText }}
                                 </span>
                             </td>
-                            <td style="font-size: 0.85rem; text-align: center;">{{ $assignment->max_score }}</td>
+                            <td style="font-size: 0.85rem; text-align: center;">
+                                @if(Auth::user()->role === 'mahasiswa')
+                                    @php
+                                        // Cari submission milik user yang login untuk tugas ini
+                                        $mySub = $assignment->submissions->where('student_id', Auth::user()->student->id ?? null)->first();
+                                    @endphp
+                                    
+                                    @if($mySub && $mySub->status === 'graded' && $mySub->latestGrade)
+                                        <span class="badge bg-info text-dark" style="font-size: 0.75rem;">
+                                            {{ $mySub->latestGrade->result }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                @else
+                                    {{-- Dosen/Admin hanya melihat skor maksimal --}}
+                                    {{ $assignment->max_score }}
+                                @endif
+                            </td>
 
                             @if(Auth::user()->role === 'admin')
                                 <td style="font-size: 0.85rem;">{{ $assignment->creator->name ?? '-' }}</td>

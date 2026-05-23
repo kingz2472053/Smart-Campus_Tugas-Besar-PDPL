@@ -5,7 +5,9 @@ namespace App\Services\Auth;
 use App\Contracts\AuthServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OtpMail;
 
 /**
  * OTPDecorator — Concrete Decorator (Decorator Pattern)
@@ -14,6 +16,15 @@ use Illuminate\Support\Str;
  * Membungkus BasicAuth tanpa mengubah implementasinya.
  * Jika OTP aktif pada akun pengguna, generate dan validasi kode OTP.
  * Jika OTP tidak aktif, proses autentikasi berjalan normal.
+ *
+ * Alur kerja:
+ * 1. BasicAuth memvalidasi email + password
+ * 2. Jika berhasil dan user memiliki otp_enabled = true:
+ *    - Generate kode OTP 6 digit
+ *    - Simpan ke database (user.otp_code, user.otp_expiry)
+ *    - Kirim notifikasi ke user (via Laravel Notification)
+ *    - Return false → user harus verifikasi OTP di halaman terpisah
+ * 3. Jika OTP tidak aktif → login langsung berhasil
  */
 class OTPDecorator extends AuthDecorator
 {
@@ -41,7 +52,11 @@ class OTPDecorator extends AuthDecorator
 
         if ($user && $this->isOtpRequired($user)) {
             // OTP diperlukan, generate dan simpan kode
-            $this->generateOTP($user);
+            $otpCode = $this->generateOTP($user);
+
+            // Kirim notifikasi OTP ke user
+            $this->sendOtpNotification($user, $otpCode);
+
             // Return false karena butuh verifikasi OTP terpisah
             return false;
         }
@@ -92,13 +107,39 @@ class OTPDecorator extends AuthDecorator
     }
 
     /**
+     * Kirim notifikasi OTP ke pengguna.
+     *
+     * Saat ini menggunakan log channel sebagai simulasi pengiriman email.
+     * Di production, bisa diganti dengan:
+     * - Mail::to($user)->send(new OtpMail($otpCode));
+     * - $user->notify(new OtpNotification($otpCode));
+     *
+     * Ini menunjukkan bahwa Decorator Pattern tidak mengubah
+     * implementasi BasicAuth sama sekali — hanya menambahkan layer baru.
+     */
+    private function sendOtpNotification(User $user, string $otpCode): void
+    {
+        // Tetap simpan di session untuk fallback/dev mode agar web tidak error kalau email gagal
+        session(['otp_display_code' => $otpCode]);
+
+        // Kirim email sungguhan
+        try {
+            Mail::to($user->email)->send(new OtpMail($user, $otpCode));
+            Log::info("📧 [OTP Notification] Email OTP berhasil dikirim ke {$user->email}");
+        } catch (\Exception $e) {
+            Log::error("❌ [OTP Notification] Gagal mengirim email OTP ke {$user->email}: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Cek apakah pengguna memerlukan verifikasi OTP.
+     *
+     * Mengecek kolom otp_enabled pada tabel users.
+     * Admin bisa mengaktifkan OTP per user melalui panel admin.
      */
     private function isOtpRequired(User $user): bool
     {
-        // OTP dianggap aktif jika sudah pernah di-setup
-        // (bisa dikembangkan dengan kolom otp_enabled)
-        return false; // Default: OTP non-aktif, bisa diaktifkan per user
+        return (bool) $user->otp_enabled;
     }
 
     /**

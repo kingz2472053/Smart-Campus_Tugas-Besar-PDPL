@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\SubmissionController;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 
 // ──────────────────────────────────────
@@ -43,12 +44,20 @@ Route::middleware('auth')->group(function () {
         // Submission (Upload tugas)
         Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('submissions.store');
         Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
+
+        // Activity Log (hanya log milik sendiri)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // ── Dosen Routes ──
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
+        Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
+             ->name('submissions.grade');
+
+        // Activity Log (hanya log milik sendiri)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // ── Admin Routes ──
@@ -56,5 +65,9 @@ Route::middleware('auth')->group(function () {
         // Manajemen Tugas (Read-Only Overview)
         Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
         Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+
+        // Activity Log (semua log dari semua user — full access)
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
     });
 });
