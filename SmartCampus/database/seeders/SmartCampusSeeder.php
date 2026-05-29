@@ -31,7 +31,7 @@ class SmartCampusSeeder extends Seeder
         $adminFactory = UserFactoryManager::getFactory('admin');
         $admin = $adminFactory->createUser([
             'name' => 'Admin SmartCampus',
-            'email' => 'smartcampus.pdpl+admin@gmail.com',
+            'email' => 'admin@smartcampus.ac.id',
             'password' => 'password',
         ]);
         // Aktifkan OTP untuk admin (demo Fitur 12: Autentikasi Bertingkat)
