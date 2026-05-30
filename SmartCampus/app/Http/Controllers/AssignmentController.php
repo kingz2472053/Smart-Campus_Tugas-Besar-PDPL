@@ -10,6 +10,7 @@ use App\Services\Task\DeleteTaskCommand;
 use App\Services\Task\TaskCommandInvoker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Repositories\Contracts\AssignmentRepositoryInterface;
 
 /**
  * AssignmentController — Mengelola CRUD tugas menggunakan Command Pattern.
@@ -36,10 +37,12 @@ class AssignmentController extends Controller
      * Invoker untuk menjalankan command (Command Pattern).
      */
     private TaskCommandInvoker $invoker;
+    protected $assignmentRepo; 
 
-    public function __construct()
+    public function __construct(AssignmentRepositoryInterface $assignmentRepo)
     {
         $this->invoker = new TaskCommandInvoker();
+        $this->assignmentRepo = $assignmentRepo;
     }
 
     // ──────────────────────────────────────
@@ -155,6 +158,7 @@ class AssignmentController extends Controller
 
         // Command Pattern: Enkapsulasi operasi create sebagai command
         $command = new CreateTaskCommand($validated);
+        $this->assignmentRepo->store($validated);
         $assignment = $this->invoker->execute($command, Auth::id());
 
         return redirect()
