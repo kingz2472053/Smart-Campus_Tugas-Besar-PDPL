@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\SubjectInterface;
+use App\Contracts\ObserverInterface; // Tambahan import
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Assignment extends Model
+class Assignment extends Model implements SubjectInterface
 {
     protected $fillable = [
         'course_id',
@@ -26,6 +28,32 @@ class Assignment extends Model
         ];
     }
 
+    // ==========================================
+    // IMPLEMENTASI OBSERVER PATTERN (SUBJECT)
+    // ==========================================
+    private array $observers = [];
+
+    public function attach(ObserverInterface $observer): void
+    {
+        $this->observers[] = $observer;
+    }
+
+    public function detach(ObserverInterface $observer): void
+    {
+        $this->observers = array_filter($this->observers, function ($obs) use ($observer) {
+            return $obs !== $observer;
+        });
+    }
+
+    public function notifyObservers(array $targetStudentIds): void
+    {
+        foreach ($this->observers as $observer) {
+            $observer->update($this, $targetStudentIds);
+        }
+    }
+    // ==========================================
+
+    // Relasi Eloquent
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
