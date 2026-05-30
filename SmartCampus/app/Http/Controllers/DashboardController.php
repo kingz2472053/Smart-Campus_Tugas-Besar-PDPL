@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Notification; // Tambahkan import ini
+use App\Models\Notification;
+use App\Models\Announcement; // Tambahkan import ini
 
 /**
  * DashboardController — Mengarahkan pengguna ke dashboard sesuai role.
@@ -46,6 +47,7 @@ class DashboardController extends Controller
                                 ->orderBy('created_at', 'desc')
                                 ->limit(5)
                                 ->get(),
+            'announcements' => Announcement::latest()->take(5)->get(),
         ];
 
         return view('dashboard.student', $data);
@@ -64,6 +66,7 @@ class DashboardController extends Controller
             'lecturer' => $lecturer,
             'courseCount' => $lecturer ? $lecturer->courses()->count() : 0,
             'assignmentCount' => $lecturer ? $lecturer->courses()->withCount('assignments')->get()->sum('assignments_count') : 0,
+            'announcements' => Announcement::latest()->take(5)->get(),
         ];
 
         return view('dashboard.lecturer', $data);
@@ -80,10 +83,7 @@ class DashboardController extends Controller
             'user' => $user,
             'userCount' => \App\Models\User::count(),
             'courseCount' => \App\Models\Course::count(),
-            'recentLogs' => \App\Models\ActivityLog::with('user')
-                ->orderBy('timestamp', 'desc')
-                ->limit(10)
-                ->get(),
+            'announcements' => Announcement::latest()->take(5)->get(),
         ];
 
         return view('dashboard.admin', $data);

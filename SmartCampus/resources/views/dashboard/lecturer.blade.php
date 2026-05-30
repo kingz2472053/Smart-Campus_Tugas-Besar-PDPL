@@ -48,4 +48,24 @@
         @endif
     </div>
 </div>
+
+<!-- Pengumuman (Announcements) -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-megaphone me-2"></i>Pengumuman Terkini</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            @forelse($announcements as $announcement)
+            <div class="list-group-item p-3">
+                <h6 class="mb-1 fw-bold">{{ $announcement->title }}</h6>
+                <small class="text-muted d-block mb-2">{{ $announcement->created_at->format('d/m/Y H:i') }} • Oleh: {{ $announcement->user->name }}</small>
+                <p class="mb-0" style="font-size: 0.9rem;">{{ $announcement->content }}</p>
+            </div>
+            @empty
+            <div class="text-center text-muted py-4">Belum ada pengumuman.</div>
+            @endforelse
+        </div>
+    </div>
+</div>
 @endsection

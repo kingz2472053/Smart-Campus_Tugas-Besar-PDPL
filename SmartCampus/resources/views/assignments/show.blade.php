@@ -109,8 +109,10 @@
                                         <td style="font-size:0.85rem">{{ $sub->student->nim ?? '-' }}</td>
                                         <td style="font-size:0.85rem">
                                             @if($sub->file_name)
-                                                <i class="bi bi-file-earmark me-1"></i>{{ $sub->file_name }}
-                                                <small class="text-muted">({{ $sub->file_size_kb }} KB)</small>
+                                                <a href="{{ Storage::url($sub->file_path) }}" target="_blank" class="text-decoration-none">
+                                                    <i class="bi bi-file-earmark-arrow-down me-1"></i>{{ $sub->file_name }}
+                                                </a>
+                                                <small class="text-muted d-block">({{ $sub->file_size_kb }} KB)</small>
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
@@ -128,10 +130,16 @@
                                         </td>
                                         <td style="text-align:center">
                                             @if($sub->status === 'graded')
-                                                {{-- Tampilkan hasil nilai jika sudah dinilai --}}
-                                                <span class="badge bg-info text-dark">
-                                                    {{ $sub->latestGrade->result ?? 'Dinilai' }}
-                                                </span>
+                                                {{-- Tampilkan hasil nilai jika sudah dinilai, dan tombol edit --}}
+                                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                                    <span class="badge bg-info text-dark">
+                                                        {{ $sub->latestGrade->result ?? 'Dinilai' }}
+                                                    </span>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary p-1" style="font-size: 0.7rem;" 
+                                                            data-bs-toggle="modal" data-bs-target="#gradeModal{{ $sub->id }}" title="Edit Nilai">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                </div>
                                             @else
                                                 {{-- Tombol trigger modal --}}
                                                 <button type="button" class="btn btn-sm btn-primary" 

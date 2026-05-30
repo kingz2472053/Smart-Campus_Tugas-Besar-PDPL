@@ -5,6 +5,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AnnouncementController;
 use Illuminate\Support\Facades\Route;
 
 // ──────────────────────────────────────
@@ -69,5 +71,9 @@ Route::middleware('auth')->group(function () {
         // Activity Log (semua log dari semua user — full access)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
         Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
+
+        // Announcement Routes
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     });
 });

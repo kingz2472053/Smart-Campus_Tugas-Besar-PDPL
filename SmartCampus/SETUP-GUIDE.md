@@ -157,7 +157,7 @@ Halaman login akan muncul. Gunakan akun berikut untuk testing:
 
 | Email                     | Password   |
 | ------------------------- | ---------- |
-| `admin@smartcampus.ac.id` | `password` |
+| `admin@smartcampus.ac.ixd` | `password` |
 
 ### 👨‍🏫 Dosen
 

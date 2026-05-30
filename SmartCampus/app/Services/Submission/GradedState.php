@@ -15,7 +15,9 @@ class GradedState implements SubmissionState
 
     public function grade(Submission $submission): void
     {
-        throw new Exception("Tugas ini sudah selesai dinilai.");
+        // Tugas sudah dinilai, tapi kita izinkan update/re-grade tanpa mengubah state.
+        // Tidak perlu throw exception di sini.
+        $submission->update(['status' => 'graded']); // Pastikan tetap graded
     }
 
     public function getStatus(): string

@@ -31,38 +31,57 @@
     </div>
 </div>
 
-<!-- Recent Activity Log (Singleton Pattern) -->
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2"></i>Aktivitas Terbaru</h6>
-        <a href="#" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+<!-- Pengumuman (Announcements) -->
+<div class="row">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-megaphone me-2"></i>Buat Pengumuman Baru</h6>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('admin.announcements.store') }}" method="POST">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Judul</label>
+                        <input type="text" name="title" class="form-control" required placeholder="Judul Pengumuman">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Isi Pengumuman</label>
+                        <textarea name="content" class="form-control" rows="4" required placeholder="Tuliskan isi pengumuman..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Publikasikan</button>
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="font-size:0.8rem">Waktu</th>
-                        <th style="font-size:0.8rem">Pengguna</th>
-                        <th style="font-size:0.8rem">Aksi</th>
-                        <th style="font-size:0.8rem">Target</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($recentLogs as $log)
-                    <tr>
-                        <td style="font-size:0.8rem">{{ $log->timestamp->format('d/m/Y H:i') }}</td>
-                        <td style="font-size:0.8rem">{{ $log->user->name ?? 'System' }}</td>
-                        <td><span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:0.7rem">{{ $log->action }}</span></td>
-                        <td style="font-size:0.8rem">{{ $log->target_table ?? '-' }}</td>
-                    </tr>
+    
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-card-list me-2"></i>Pengumuman Terkini</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @forelse($announcements as $announcement)
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold">{{ $announcement->title }}</h6>
+                                <small class="text-muted d-block mb-2">{{ $announcement->created_at->format('d/m/Y H:i') }} • Oleh: {{ $announcement->user->name }}</small>
+                                <p class="mb-0" style="font-size: 0.9rem;">{{ $announcement->content }}</p>
+                            </div>
+                            <form action="{{ route('admin.announcements.destroy', $announcement) }}" method="POST" onsubmit="return confirm('Hapus pengumuman ini?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </div>
                     @empty
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-3">Belum ada aktivitas tercatat.</td>
-                    </tr>
+                    <div class="text-center text-muted py-4">Belum ada pengumuman.</div>
                     @endforelse
-                </tbody>
-            </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
