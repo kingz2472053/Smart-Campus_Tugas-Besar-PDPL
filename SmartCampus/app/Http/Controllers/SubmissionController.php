@@ -250,7 +250,7 @@ class SubmissionController extends Controller
     {
         // 1. Validasi Input
         $request->validate([
-            'raw_score' => 'required|numeric|min:0|max:100',
+            'raw_score' => 'required|numeric|min:0|max:' . $submission->assignment->max_score,
             'strategy'  => 'required|in:numeric,letter,predicate',
         ]);
 
