@@ -242,6 +242,9 @@
                 <a href="{{ route('mahasiswa.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-journal-text"></i> Daftar Tugas
                 </a>
+                <a href="{{ route('mahasiswa.transcript') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.transcript') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Rekap Nilai
+                </a>
 
                 <div class="sc-nav-section-title mt-3">Riwayat</div>
                 <a href="{{ route('mahasiswa.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.activity-logs.*') ? 'active' : '' }}">
@@ -268,8 +271,11 @@
             {{-- Admin Menu --}}
             @if(Auth::user()->role === 'admin')
                 <div class="sc-nav-section-title mt-3">Administrasi</div>
-                <a href="{{ route('admin.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
-                    <i class="bi bi-clipboard-data"></i> Semua Tugas
+                <a href="{{ route('admin.users.index') }}" class="sc-nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                    <i class="bi bi-people"></i> Kelola Pengguna
+                </a>
+                <a href="{{ route('admin.courses.index') }}" class="sc-nav-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
+                    <i class="bi bi-book"></i> Mata Kuliah
                 </a>
 
                 <a href="{{ route('admin.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
