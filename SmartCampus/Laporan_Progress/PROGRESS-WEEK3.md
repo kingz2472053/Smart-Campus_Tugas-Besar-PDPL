@@ -32,4 +32,22 @@ Pada minggu ketiga ini, fokus pengerjaan berada pada penyelesaian akhir fitur-fi
 - ✅ Sinkronisasi ulang data di `SmartCampusSeeder` (Courses, Enrollments, Assignments, Submissions) agar saling terhubung tanpa *crash*.
 - ✅ Memastikan `RoleMiddleware` dan routing bekerja harmonis membatasi akses URL berdasarkan *role* yang sedang aktif.
 
+---
 
+## 🎯 Pencapaian Minggu 3 (Bagian Dave & Andrew)
+
+### 1. Fitur 5: Penilaian Otomatis (Strategy Pattern)
+- ✅ Mengimplementasikan **Strategy Pattern** untuk menangani berbagai algoritma penilaian yang mungkin berbeda-beda untuk setiap jenis tugas.
+- ✅ Dosen dapat memilih strategi penilaian (misal: `NumericGradingStrategy`, `LetterGradingStrategy`, `PredicateGradingStrategy`) tanpa mengubah kode controller (*Open/Closed Principle*).
+- ✅ Dibuat Service `GradingService` yang memanfaatkan `GradingContext` untuk mengeksekusi strategi penilaian berdasarkan konfigurasi `Assignment`.
+
+### 2. Fitur 10: Notifikasi Multi-Channel (Factory Method)
+- ✅ Mengimplementasikan **Factory Method Pattern** untuk menangani pembuatan objek notifikasi berdasarkan channel yang dipilih.
+- ✅ Memungkinkan sistem mengirimkan notifikasi melalui berbagai kanal (Database, Email).
+- ✅ Sistem diperluas untuk mendukung pengiriman notifikasi via email (SMTP) menggunakan `EmailNotifier` yang diinstansiasi melalui `NotificationFactory` (*Decoupling* dan *Scalability*).
+
+### Ringkasan Design Pattern yang Digunakan (Dave & Andrew)
+| Design Pattern       | Komponen              | Fungsi                                      |
+| -------------------- | --------------------- | ------------------------------------------- |
+| **Strategy Pattern** | `GradingService`      | Memilih algoritma penilaian saat runtime.   |
+| **Factory Method**   | `NotificationFactory` | Membuat objek notifikasi berdasarkan kanal. |
