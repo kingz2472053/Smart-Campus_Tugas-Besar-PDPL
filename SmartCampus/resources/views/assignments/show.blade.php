@@ -294,8 +294,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Raw Score (0-100)</label>
-                        <input type="number" name="raw_score" class="form-control" min="0" max="100" required>
+                        <label class="form-label">Raw Score (0 - {{ $assignment->max_score }})</label>
+                        <input type="number" name="raw_score" class="form-control" min="0" max="{{ $assignment->max_score }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Strategi Penilaian</label>

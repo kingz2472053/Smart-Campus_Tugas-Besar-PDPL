@@ -158,7 +158,6 @@ class AssignmentController extends Controller
 
         // Command Pattern: Enkapsulasi operasi create sebagai command
         $command = new CreateTaskCommand($validated);
-        $this->assignmentRepo->store($validated);
         $assignment = $this->invoker->execute($command, Auth::id());
 
         return redirect()
