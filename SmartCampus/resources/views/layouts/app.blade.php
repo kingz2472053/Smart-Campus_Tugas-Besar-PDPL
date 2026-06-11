@@ -245,9 +245,10 @@
                 <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-bell"></i> Notifikasi
+                <a href="{{ route('mahasiswa.transcript') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.transcript') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Rekap Nilai
                 </a>
+
                 <div class="sc-nav-section-title mt-3">Riwayat</div>
                 <a href="{{ route('mahasiswa.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.activity-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> Riwayat Aktivitas
@@ -263,12 +264,7 @@
                 {{-- <a href="{{ route('dosen.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.assignments.index') ? 'active' : '' }}">
                     <i class="bi bi-check2-square"></i> Penilaian
                 </a> --}}
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-people"></i> Monitor Mahasiswa
-                </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-file-earmark-arrow-down"></i> Export Laporan
-                </a>
+
                 <div class="sc-nav-section-title mt-3">Riwayat</div>
                 <a href="{{ route('dosen.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.activity-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> Riwayat Aktivitas
@@ -278,24 +274,17 @@
             {{-- Admin Menu --}}
             @if(Auth::user()->role === 'admin')
                 <div class="sc-nav-section-title mt-3">Administrasi</div>
-                <a href="{{ route('admin.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
-                    <i class="bi bi-clipboard-data"></i> Semua Tugas
+                <a href="{{ route('admin.users.index') }}" class="sc-nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                    <i class="bi bi-people"></i> Kelola Pengguna
                 </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-person-gear"></i> Kelola Pengguna
+                <a href="{{ route('admin.courses.index') }}" class="sc-nav-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
+                    <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-book"></i> Kelola Mata Kuliah
-                </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-person-check"></i> Kelola Enrollment
-                </a>
+
                 <a href="{{ route('admin.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> Activity Log
                 </a>
-                <a href="#" class="sc-nav-link">
-                    <i class="bi bi-file-earmark-arrow-down"></i> Export Data
-                </a>
+
             @endif
         </nav>
 

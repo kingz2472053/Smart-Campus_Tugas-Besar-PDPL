@@ -47,6 +47,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('submissions.store');
         Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
 
+        // Rekap Nilai (Transkrip)
+        Route::get('/transcript', [\App\Http\Controllers\TranscriptController::class, 'index'])->name('transcript');
+
         // Activity Log (hanya log milik sendiri)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
@@ -62,6 +65,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
+        Route::get('/assignments/{assignment}/export', [AssignmentController::class, 'exportGrades'])
+             ->name('assignments.export');
         Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
              ->name('submissions.grade');
 
@@ -71,9 +76,11 @@ Route::middleware('auth')->group(function () {
 
     // ── Admin Routes ──
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        // Manajemen Tugas (Read-Only Overview)
-        Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
-        Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+        // User Management (Admin)
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+        
+        // Course Management (Admin)
+        Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
 
         // Activity Log (semua log dari semua user — full access)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');

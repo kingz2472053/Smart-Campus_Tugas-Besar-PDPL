@@ -11,7 +11,7 @@
     $deadline = $assignment->deadline;
     if ($deadline < $now) {
         $deadlineBadge = 'bg-danger';
-        $deadlineText = 'Terlambat';
+        $deadlineText = $role === 'mahasiswa' ? 'Terlambat' : 'Ditutup';
     } elseif ($deadline <= $now->copy()->addDays(3)) {
         $deadlineBadge = 'bg-warning text-dark';
         $deadlineText = 'Mendekati Deadline';
@@ -54,6 +54,9 @@
     </div>
     @if($isOwner)
         <div class="d-flex gap-2">
+            <a href="{{ route('dosen.assignments.export', $assignment) }}" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export Nilai (CSV)
+            </a>
             <a href="{{ route('dosen.assignments.edit', $assignment) }}" class="btn btn-outline-warning btn-sm">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>

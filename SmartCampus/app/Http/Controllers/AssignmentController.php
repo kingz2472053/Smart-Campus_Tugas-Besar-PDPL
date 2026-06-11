@@ -240,6 +240,45 @@ class AssignmentController extends Controller
             ->with('success', 'Tugas "' . $title . '" berhasil dihapus.');
     }
 
+    /**
+     * Export nilai mahasiswa ke format CSV.
+     */
+    public function exportGrades(Assignment $assignment)
+    {
+        $user = Auth::user();
+        $this->authorizeOwnership($user, $assignment);
+
+        $assignment->load('submissions.student.user', 'submissions.latestGrade');
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=nilai_{$assignment->id}.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($assignment) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['No', 'Nama Mahasiswa', 'NIM', 'Waktu Submit', 'Status', 'Nilai']);
+
+            foreach ($assignment->submissions as $index => $sub) {
+                fputcsv($file, [
+                    $index + 1,
+                    $sub->student->user->name ?? '-',
+                    $sub->student->nim ?? '-',
+                    $sub->submitted_at ? $sub->submitted_at->format('Y-m-d H:i:s') : '-',
+                    $sub->status,
+                    $sub->latestGrade->result ?? 'Belum dinilai'
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     // ──────────────────────────────────────
     // Private Helper Methods (Clean Code: Extract Method)
     // ──────────────────────────────────────
