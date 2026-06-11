@@ -51,7 +51,7 @@
                 <div class="col-md-6">
                     <label for="deadline" class="form-label fw-medium">Deadline <span class="text-danger">*</span></label>
                     <input type="datetime-local" name="deadline" id="deadline" class="form-control @error('deadline') is-invalid @enderror"
-                           value="{{ old('deadline') }}" required>
+                           value="{{ old('deadline', now()->addDay()->format('Y-m-d\TH:i')) }}" required>
                     @error('deadline')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
