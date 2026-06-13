@@ -53,9 +53,12 @@ public function __construct(AssignmentRepositoryInterface $assignmentRepo) {
 Kolaborasi Dua Pola Desain (Repository & Command):Di dalam method store(), sistem mengeksekusi dua pola desain berbeda sekaligus untuk menangani satu alur pembuatan tugas:PHP// 1. Eksekusi Repository Pattern untuk keamanan database
 $this->assignmentRepo->store($validated); 
 
-// 2. Eksekusi Command Pattern untuk logging tindakan/redireksi
 $assignment = $this->invoker->execute($command, Auth::id());
-4. Integrasi Dashboard & Tampilan WebPerbaikan arsitektur ini berdampak langsung pada fungsionalitas visual halaman web:Form Edit & Create Aktual: Penggantian penanganan data ke kolom deadline membuat form pembuatan dan pembaruan tugas kini berjalan mulus tanpa memicu error sistem.Widget Detail Tugas Aktif: Menampilkan penghitungan mundur sisa waktu secara dinamis ("Mendekati Deadline") serta nama dosen pembuat tugas secara presisi pada halaman detail.Sinkronisasi Submissions: Menghubungkan identitas tugas secara aman sehingga tabel pengumpulan (submission) milik mahasiswa dapat tampil langsung di bawah deskripsi tugas.5. Struktur File yang Dibuat/DimodifikasiSmartCampus/
+4. Integrasi Dashboard & Tampilan Web
+
+
+Perbaikan arsitektur ini berdampak langsung pada fungsionalitas visual halaman web:Form Edit & Create Aktual: Penggantian penanganan data ke kolom deadline membuat form pembuatan dan pembaruan tugas kini berjalan mulus tanpa memicu error sistem.Widget Detail Tugas Aktif: Menampilkan penghitungan mundur sisa waktu secara dinamis ("Mendekati Deadline") serta nama dosen pembuat tugas secara presisi pada halaman detail.Sinkronisasi Submissions: Menghubungkan identitas tugas secara aman sehingga tabel pengumpulan (submission) milik mahasiswa dapat tampil langsung di bawah deskripsi tugas.
+5. Struktur File yang Dibuat/DimodifikasiSmartCampus/
 ├── app/
 │   ├── Repositories/
 │   │   ├── Contracts/
