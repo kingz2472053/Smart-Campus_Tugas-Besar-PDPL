@@ -139,3 +139,4 @@ Seluruh pengujian sukses dilewati dengan status **PASS**.
 * Implementasi UI Theme Factory untuk Light/Dark Mode (Fitur 9 - Abstract Factory).
 * Penyimpanan Data File Tugas (Fitur 6 - Strategy Pattern).
 * Penggabungan seluruh fitur ke dalam branch utama (`main`) dan finalisasi pengetesan integrasi akhir sistem (*end-to-end*).
+

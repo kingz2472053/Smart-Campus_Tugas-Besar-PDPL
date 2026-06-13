@@ -2,6 +2,7 @@
 @section('title', 'Dashboard Mahasiswa')
 
 @section('content')
+@include('partials.announcements')
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="sc-stat-card">
