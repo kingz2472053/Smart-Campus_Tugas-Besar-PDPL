@@ -61,7 +61,7 @@ Tugas-tugas dasar infrastruktur yang telah disiapkan di awal project agar semua 
 
 ---
 
-### 👤 Ko Dev — Dave Andrew (Fitur 3, 5, 11)
+### 👤   (Fitur 3, 5, 11)
 
 - **Fitur 3: Deadline Reminder Otomatis** (Design Pattern: *Observer*)
   - [x] `DeadlineSubjectInterface` — Interface Subject
