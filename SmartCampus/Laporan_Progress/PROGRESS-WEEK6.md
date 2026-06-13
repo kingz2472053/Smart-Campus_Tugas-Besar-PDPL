@@ -78,3 +78,40 @@ SmartCampus/
 └── routes/
     └── web.php                            [MODIFIED] Tambahan route export & courses
 ```
+
+---
+
+# PROGRESS WEEK 6 — SmartCampus
+
+**Anggota:** Francisco Valentino (2472040)  
+**Branch:** `Week-6---Francisco-Valentino`  
+**Tanggal:** 13 Juni 2026
+
+## 1. Perbaikan Bug Pembuatan Akun & ID Dosen
+- **Masalah:** Saat pembuatan akun Mahasiswa/Dosen dari sisi Admin, tabel `students` membutuhkan data tambahan seperti `program_studi` dan `angkatan`, sedangkan dosen membutuhkan `nip` / `nidn`. Data-data ini awalnya tidak ada di formulir.
+- **Solusi:** Saya telah menambahkan *input fields* dinamis menggunakan Javascript pada view `admin.users.create` yang akan muncul sesuai dengan role yang dipilih (Dosen / Mahasiswa).
+- **Hasil:** Admin sekarang dapat mengisi "Program Studi" dan "Angkatan" saat membuat akun mahasiswa, serta "NIP" saat membuat akun dosen. Bug *constraint violation* di database telah teratasi.
+
+## 2. Fitur Aktivasi/Nonaktifkan Akun
+- **Solusi:** 
+  - Saya telah menambahkan kolom `Status` (*badge* Aktif/Nonaktif) dan tombol _Toggle_ di tabel manajemen user.
+  - Saya menambahkan middleware `CheckIsActive` yang secara otomatis akan melakukan _logout_ paksa pada pengguna jika status `is_active` mereka diubah menjadi `false` oleh Admin.
+
+## 3. Manajemen Mata Kuliah & Kelas Dinamis
+- **Solusi:** 
+  - Sesuai diskusi tim, tabel `courses` telah dimodifikasi (migration) dengan menambahkan kolom `class_name` (Kelas) dan `academic_year` (Tahun Ajaran), serta menghapus pembatasan `unique` pada satu kode mata kuliah.
+  - Pada halaman Tambah Mata Kuliah, kini menggunakan form dinamis. Admin cukup mengisi informasi dasar (Kode, Nama, SKS, Semester, Tahun Ajaran) sekali saja, dan dapat menekan tombol **Tambah Kelas** berkali-kali untuk menentukan Kelas (A, B, C, dst.) beserta Dosen yang mengajar kelas tersebut.
+
+## 4. Pengumuman Global
+- **Solusi:** 
+  - Telah dibuat tabel dan model `Announcement`.
+  - Admin kini memiliki menu baru di _sidebar_ bernama **Pengumuman**, di mana Admin bisa membuat, mengedit, atau menonaktifkan pengumuman penting.
+  - Setiap pengumuman yang aktif akan otomatis muncul di bagian atas _Dashboard_ semua user (Admin, Dosen, Mahasiswa) dengan desain _alert box_ yang rapi.
+
+## 5. Pembaruan Fitur & UI Admin
+- **Solusi & Penyesuaian:**
+  - **Dashboard Admin:** Menyesuaikan metrik statistik menjadi 4 data spesifik (Total Mahasiswa Aktif, Total Dosen, Total Matkul Berjalan, Total Kelas) dan menghapus tabel Aktivitas Terbaru agar antarmuka lebih fokus.
+  - **Manajemen Pengguna:** Menghapus _tab filter_ "Semua" dan "Admin" sehingga hanya menampilkan Mahasiswa dan Dosen. Menyembunyikan form "Program Studi" (otomatis terisi *default*) dan mencegah pembuatan akun dengan *role* Admin.
+  - **Pencegahan Cache:** Menambahkan *middleware* `PreventBackHistory` untuk mencegah pengguna kembali ke halaman *dashboard* dengan tombol *Back* setelah *logout*.
+  - **UI/UX Tambahan:** Menghilangkan peringatan *autofill password* dari *browser* di form *login*, serta membersihkan menu-menu *sidebar* yang tidak diperlukan (seperti Riwayat Aktivitas untuk Dosen/Mahasiswa dan Rekap Nilai untuk Mahasiswa).
+  - **Perbaikan Bug Unduh Tugas:** Menambahkan rute dan sistem aman agar Dosen bisa mengunduh file tugas (*submission*) milik mahasiswa, dan mahasiswa bisa mengunduh file yang mereka kumpulkan sendiri.

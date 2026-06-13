@@ -272,4 +272,29 @@ class SubmissionController extends Controller
 
         return back()->with('success', 'Tugas berhasil dinilai!');
     }
+
+    /**
+     * Download file submission.
+     * Akses: Dosen (pemilik tugas), Mahasiswa (pemilik submission), Admin (semua).
+     */
+    public function download(Submission $submission)
+    {
+        $user = Auth::user();
+
+        if ($user->role === 'dosen') {
+            if ($submission->assignment->created_by !== $user->id) {
+                abort(403, 'Akses ditolak.');
+            }
+        } elseif ($user->role === 'mahasiswa') {
+            if (!$user->student || $submission->student_id !== $user->student->id) {
+                abort(403, 'Akses ditolak.');
+            }
+        }
+
+        if (!$submission->file_path || !Storage::disk('public')->exists($submission->file_path)) {
+            abort(404, 'File tidak ditemukan di server.');
+        }
+
+        return Storage::disk('public')->download($submission->file_path, $submission->file_name);
+    }
 }

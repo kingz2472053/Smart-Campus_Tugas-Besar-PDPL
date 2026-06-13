@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Notification; // Tambahkan import ini
+use App\Models\Notification;
+use App\Models\Announcement;
 
 /**
  * DashboardController — Mengarahkan pengguna ke dashboard sesuai role.
@@ -46,6 +47,7 @@ class DashboardController extends Controller
                                 ->orderBy('created_at', 'desc')
                                 ->limit(5)
                                 ->get(),
+            'announcements' => Announcement::where('is_active', true)->latest()->limit(5)->get(),
         ];
 
         return view('dashboard.student', $data);
@@ -64,6 +66,7 @@ class DashboardController extends Controller
             'lecturer' => $lecturer,
             'courseCount' => $lecturer ? $lecturer->courses()->count() : 0,
             'assignmentCount' => $lecturer ? $lecturer->courses()->withCount('assignments')->get()->sum('assignments_count') : 0,
+            'announcements' => Announcement::where('is_active', true)->latest()->limit(5)->get(),
         ];
 
         return view('dashboard.lecturer', $data);
@@ -78,12 +81,11 @@ class DashboardController extends Controller
 
         $data = [
             'user' => $user,
-            'userCount' => \App\Models\User::count(),
-            'courseCount' => \App\Models\Course::count(),
-            'recentLogs' => \App\Models\ActivityLog::with('user')
-                ->orderBy('timestamp', 'desc')
-                ->limit(10)
-                ->get(),
+            'activeStudentCount' => \App\Models\User::where('role', 'mahasiswa')->where('is_active', true)->count(),
+            'lecturerCount' => \App\Models\User::where('role', 'dosen')->count(),
+            'uniqueCourseCount' => \App\Models\Course::distinct('code')->count('code'),
+            'classCount' => \App\Models\Course::count(),
+            'announcements' => Announcement::where('is_active', true)->latest()->limit(5)->get(),
         ];
 
         return view('dashboard.admin', $data);
