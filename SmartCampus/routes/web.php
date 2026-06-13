@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ExportController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,7 @@ Route::middleware('auth')->group(function () {
     // Dashboard (role-based)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+
     // Download Submission File (General Auth Route)
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
 
@@ -53,8 +55,6 @@ Route::middleware('auth')->group(function () {
         // Rekap Nilai (Transkrip)
         Route::get('/transcript', [\App\Http\Controllers\TranscriptController::class, 'index'])->name('transcript');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
         // Mata Kuliah & Nilai
         Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
@@ -66,6 +66,10 @@ Route::middleware('auth')->group(function () {
 
     // ── Dosen Routes ──
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
+        // Undo / Redo untuk tugas
+        Route::post('/assignments/undo', [AssignmentController::class, 'undo'])->name('assignments.undo');
+        Route::post('/assignments/redo', [AssignmentController::class, 'redo'])->name('assignments.redo');
+
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
         Route::get('/assignments/{assignment}/export', [AssignmentController::class, 'exportGrades'])
@@ -73,8 +77,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
              ->name('submissions.grade');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // ── Admin Routes ──

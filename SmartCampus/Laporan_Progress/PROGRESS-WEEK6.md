@@ -115,3 +115,92 @@ SmartCampus/
   - **Pencegahan Cache:** Menambahkan *middleware* `PreventBackHistory` untuk mencegah pengguna kembali ke halaman *dashboard* dengan tombol *Back* setelah *logout*.
   - **UI/UX Tambahan:** Menghilangkan peringatan *autofill password* dari *browser* di form *login*, serta membersihkan menu-menu *sidebar* yang tidak diperlukan (seperti Riwayat Aktivitas untuk Dosen/Mahasiswa dan Rekap Nilai untuk Mahasiswa).
   - **Perbaikan Bug Unduh Tugas:** Menambahkan rute dan sistem aman agar Dosen bisa mengunduh file tugas (*submission*) milik mahasiswa, dan mahasiswa bisa mengunduh file yang mereka kumpulkan sendiri.
+
+---
+
+# PROGRESS WEEK 6 — SmartCampus
+
+**Anggota:** Calvin Yohanis (2272017)  
+**Branch:** `Week-6---Calvin-Yohanis`  
+**Tanggal:** 13 Juni 2026
+
+## 1. Gambaran Umum Fitur
+
+Pada **Week 6**, fokus pengembangan diarahkan pada **Stabilisasi Antarmuka (UI/UX Optimization)**, khususnya integrasi visual *Dark Mode* secara menyeluruh pada komponen tabel riwayat data sistem menggunakan penegasan gaya (*style enforcement*). Langkah ini krusial untuk memastikan komponen pemantauan keamanan tetap memiliki tingkat keterbacaan (*readability*) yang tinggi di berbagai kondisi pencahayaan.
+
+### Apa yang dilakukan:
+- **Sinkronisasi Skema Warna Mode Gelap:** Memperbaiki degradasi warna teks pada komponen tabel Bootstrap agar kontras elemen anak (*child nodes*) tetap terjaga saat menggunakan tema gelap.
+- **Peningkatan Kontras Alamat IP via `!important`:** Menerapkan penegasan gaya secara agresif pada data Alamat IP (*IP Address*) pelacak aktivitas untuk mempermudah audit keamanan oleh Administrator.
+- **Refactoring Arsitektur CSS Tampilan:** Menyusun ulang aturan pewarnaan kustom agar terisolasi dengan baik dan tidak terdistorsi oleh utilitas class bawaan framework.
+
+## 2. Design Pattern & Refactoring — UI Style Enforcement
+
+Untuk menjamin konsistensi tampilan pada *Dark Mode*, dilakukan penerapan aturan penegasan gaya menggunakan properti deklaratif guna memastikan tidak ada kebocoran warna teks dari class bawaan Bootstrap.
+
+### Mengapa Menggunakan Deklarasi `!important` pada Komponen ini?
+- **Pencegahan Override Otomatis:** Memastikan bahwa class utilitas bawaan framework tidak menimpa warna teks kustom saat beralih ke mode gelap.
+- **Konsistensi Visual Keamanan:** Data sensitif dipastikan selalu terlihat menonjol dalam kondisi apa pun.
+
+## 3. Implementasi Teknis — Penataan Gaya Antarmuka
+
+Perbaikan diimplementasikan langsung pada file tata letak utama (`app.blade.php`) dengan mempertegas bobot spesifisitas menggunakan modifikasi deklarasi warna:
+- Menargetkan teks umum dalam tabel *dark mode* agar berwarna putih kontras (`#F8FAFC`).
+- Memaksa kolom IP Address menjadi merah pekat (`#F87171`) berserta ketebalan teks.
+
+## 4. Struktur File yang Dibuat/Dimodifikasi
+
+```text
+SmartCampus/
+└── resources/views/layouts/
+    └── app.blade.php    [MODIFIED] Refactor CSS Dark Mode, penegasan warna tabel
+```
+
+---
+
+# PROGRESS WEEK 6 — SmartCampus
+
+**Anggota:** Teofilus Juan Puapadang (2472053)  
+**Branch:** `Week-6---Teofilus-Juan-Puapadang`  
+**Tanggal:** 13 Juni 2026
+
+## 1. Gambaran Umum Fitur
+
+Fokus pengembangan pada minggu ini adalah implementasi fitur **Undo / Redo** pada pengelolaan tugas (Assignment) untuk aktor Dosen, serta penyempurnaan sudut pandang (Point of View / POV) dan validasi formulir (Guard Clauses) dalam sistem penilaian.
+
+## 2. Design Pattern — Command & Memento Pattern
+
+Untuk mewujudkan fitur *Undo / Redo*, sistem memanfaatkan kombinasi dari **Command Pattern** (untuk membungkus aksi CRUD) dan prinsip **Memento Pattern** (untuk menyimpan dan mengembalikan status objek ke kondisi sebelumnya).
+
+-   `CommandInterface`: Interface untuk semua aksi (Create, Edit, Delete).
+-   `TaskCommandInvoker`: Kelas yang bertindak sebagai *Invoker* sekaligus pengelola riwayat status (Memento). Status disimpan di dalam PHP Session (`task_undo_stack`, `task_redo_stack`) yang berisi ID rekaman dan aksi yang dilakukan.
+-   Tiga perintah konkrit: `CreateTaskCommand`, `EditTaskCommand`, dan `DeleteTaskCommand` yang mendefinisikan cara mengubah dan mengembalikan data tugas (*assignment*).
+
+## 3. Penyempurnaan POV (Point of View) & Form Guard
+
+Melakukan perbaikan logika tampilan (*View*) agar sistem lebih aman dan relevan bagi setiap aktor:
+
+-   **Guard Clause Penilaian (Controller & UI):** Mengamankan fungsi penilaian agar dosen tidak bisa memberikan nilai melebihi batas skor maksimal (`max_score`) dari masing-masing tugas, baik pada validasi `SubmissionController` maupun proteksi input HTML di _modal_.
+-   **Kustomisasi POV Status:** Memperbaiki teks keterangan status di halaman tugas. Status akan menampilkan teks "Ditutup" ketika diakses oleh Dosen/Admin (sebagai pengelola), namun tetap "Terlambat" saat dilihat oleh Mahasiswa (sebagai partisipan).
+-   **Pembersihan Elemen:** Menyembunyikan opsi filter status *deadline* untuk akun Dosen agar tampilan lebih terfokus.
+
+## 4. Struktur File yang Dibuat/Dimodifikasi
+
+```text
+SmartCampus/
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── AssignmentController.php       [MODIFIED] Integrasi Invoker, Undo/Redo logic
+│   │   └── SubmissionController.php       [MODIFIED] Guard max_score dynamic
+│   └── Services/Command/
+│       ├── TaskCommandInvoker.php         [NEW] Invoker & Memento state manager
+│       ├── CreateTaskCommand.php          [NEW] Concrete command
+│       ├── EditTaskCommand.php            [NEW] Concrete command (saves before & after)
+│       └── DeleteTaskCommand.php          [NEW] Concrete command (soft/hard delete handling)
+│
+├── resources/views/
+│   └── assignments/
+│       ├── index.blade.php                [MODIFIED] Tombol Undo/Redo & filter POV Dosen
+│       └── show.blade.php                 [MODIFIED] POV checks & modal max_score
+└── routes/
+    └── web.php                            [MODIFIED] Rute POST untuk undo & redo
+```

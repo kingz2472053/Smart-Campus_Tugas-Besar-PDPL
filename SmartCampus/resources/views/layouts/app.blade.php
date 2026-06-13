@@ -363,6 +363,7 @@
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
 
+
             @endif
 
             {{-- Menu untuk Dosen --}}
@@ -421,9 +422,12 @@
                 <span class="sc-topbar-title">@yield('title', 'Dashboard')</span>
             </div>
             <div class="sc-user-info">
+                <!-- Theme Toggle Button -->
                 <button id="theme-toggle" type="button" class="btn btn-link text-secondary p-2 me-2" style="text-decoration: none; box-shadow: none;">
                     <i id="theme-icon" class="bi bi-sun-fill" style="font-size: 1.2rem; color: #EAB308;"></i>
                 </button>
+
+
                 <span class="sc-role-badge bg-primary bg-opacity-10 text-primary">{{ ucfirst(Auth::user()->role) }}</span>
             </div>
         </header>
@@ -431,8 +435,18 @@
         <div class="sc-content">
             {{-- Flash Session Notifications --}}
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bi bi-check-circle me-1"></i> {{ session('success') }}
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between" role="alert">
+                    <div>
+                        <i class="bi bi-check-circle me-1"></i> {{ session('success') }}
+                    </div>
+                    @if(Auth::check() && Auth::user()->role === 'dosen' && session('show_undo'))
+                        <form action="{{ route('dosen.assignments.undo') }}" method="POST" class="d-inline me-4">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-success py-0 border-0 text-decoration-underline" style="font-size: 0.85rem;">
+                                <i class="bi bi-arrow-counterclockwise"></i> Batal (Undo)
+                            </button>
+                        </form>
+                    @endif
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
@@ -449,6 +463,9 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
     @stack('scripts')
 
     <script>

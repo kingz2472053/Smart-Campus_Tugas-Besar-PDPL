@@ -61,7 +61,7 @@ Tugas-tugas dasar infrastruktur yang telah disiapkan di awal project agar semua 
 
 ---
 
-### 👤 Ko Dev — Dave Andrew (Fitur 3, 5, 11)
+### 👤   (Fitur 3, 5, 11)
 
 - **Fitur 3: Deadline Reminder Otomatis** (Design Pattern: *Observer*)
   - [x] `DeadlineSubjectInterface` — Interface Subject
@@ -71,11 +71,11 @@ Tugas-tugas dasar infrastruktur yang telah disiapkan di awal project agar semua 
   - [x] Trigger alert/notifikasi untuk mahasiswa
 
 - **Fitur 5: Sistem Penilaian Otomatis** (Design Pattern: *Strategy*)
-  - [ ] `GradingStrategyInterface` — Interface Strategy
-  - [ ] `NumericGrading`, `LetterGrading`, `PassFailGrading` — Concrete Strategies
-  - [ ] `GradeController` — Controller penilaian
-  - [ ] View: halaman input/edit nilai oleh dosen
-  - [ ] View: penampilan nilai di dashboard mahasiswa
+  - [x] `GradingStrategyInterface` — Interface Strategy
+  - [x] `NumericGradingStrategy`, `LetterGradingStrategy`, `PredicateGradingStrategy` — Concrete Strategies
+  - [x] `GradingService` — Context & Pengelola Penilaian
+  - [x] View: modal input nilai oleh dosen (`assignments/show.blade.php`)
+  - [x] View: penampilan nilai di halaman tugas mahasiswa (`assignments/index.blade.php`)
 
 - **Fitur 11: Export Data (PDF/CSV)** (Design Pattern: *Strategy*)
   - [ ] `ExportStrategyInterface` — Interface Strategy
@@ -105,11 +105,11 @@ Tugas-tugas dasar infrastruktur yang telah disiapkan di awal project agar semua 
   - [ ] View: tombol Undo bagi dosen (contoh: batal hapus tugas)
 
 - **Fitur 10: Notifikasi MultiChannel** (Design Pattern: *Observer / Factory Method*)
-  - [ ] `NotificationChannelInterface` — Interface
-  - [ ] `EmailChannel`, `DatabaseChannel` — Concrete Channels
-  - [ ] `NotificationFactory` — Factory Method untuk memilih channel
-  - [ ] Dropdown notifikasi lonceng di Topbar
-  - [ ] Controller dan View notifikasi
+  - [x] `NotificationChannelInterface` — Interface Product
+  - [x] `EmailChannel`, `DashboardChannel` — Concrete Products (Channels)
+  - [x] `NotificationSender` (Abstract Creator) & Concrete Creators — Factory Method untuk instansiasi channel
+  - [x] Dropdown notifikasi lonceng di Topbar (AJAX dinamis)
+  - [x] Controller dan View notifikasi (Notification Center)
 
 ---
 
