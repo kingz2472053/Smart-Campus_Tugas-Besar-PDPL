@@ -163,7 +163,7 @@ Halaman login akan muncul. Gunakan akun berikut untuk testing:
 
 | Email                                                   | Password   | Mata Kuliah                 |
 | ------------------------------------------------------- | ---------- | --------------------------- |
-| `budi@smartcampus.ac.id`                                | `password` | Pola Desain Perangkat Lunak |
+| `budi@smartcampus.ac.id`                                | `password` | PDPL, RPL, PBO              |
 | `sari@smartcampus.ac.id`                                | `password` | Web Dasar                   |
 | `ahmad@smartcampus.ac.id`                               | `password` | Pancasila                   |
 | `maya@smartcampus.ac.id`                                | `password` | Proyek PL (Testing H-1)     |

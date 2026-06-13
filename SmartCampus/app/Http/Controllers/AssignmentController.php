@@ -241,6 +241,44 @@ class AssignmentController extends Controller
     }
 
     /**
+     * Undo aksi terakhir.
+     */
+    public function undo()
+    {
+        $user = Auth::user();
+        if ($user->role !== 'dosen') {
+            abort(403, 'Hanya dosen yang dapat melakukan operasi ini.');
+        }
+
+        $message = $this->invoker->undo($user->id);
+
+        if ($message) {
+            return redirect()->back()->with('success', $message);
+        }
+
+        return redirect()->back()->with('error', 'Tidak ada aksi yang bisa dibatalkan.');
+    }
+
+    /**
+     * Redo aksi terakhir.
+     */
+    public function redo()
+    {
+        $user = Auth::user();
+        if ($user->role !== 'dosen') {
+            abort(403, 'Hanya dosen yang dapat melakukan operasi ini.');
+        }
+
+        $message = $this->invoker->redo($user->id);
+
+        if ($message) {
+            return redirect()->back()->with('success', $message);
+        }
+
+        return redirect()->back()->with('error', 'Tidak ada aksi yang bisa dijalankan kembali.');
+    }
+
+    /**
      * Export nilai mahasiswa ke format CSV.
      */
     public function exportGrades(Assignment $assignment)

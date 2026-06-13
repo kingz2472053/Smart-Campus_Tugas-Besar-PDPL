@@ -38,14 +38,6 @@ Route::middleware('auth')->group(function () {
     // Dashboard (role-based)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Notifikasi MultiChannel
-    Route::prefix('notifications')->name('notifications.')->group(function () {
-        Route::get('/', [NotificationController::class, 'index'])->name('index');
-        Route::get('/unread', [NotificationController::class, 'getUnread'])->name('unread');
-        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
-        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read.all');
-        Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
-    });
 
     // Download Submission File (General Auth Route)
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
@@ -63,8 +55,6 @@ Route::middleware('auth')->group(function () {
         // Rekap Nilai (Transkrip)
         Route::get('/transcript', [\App\Http\Controllers\TranscriptController::class, 'index'])->name('transcript');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
 
         // Mata Kuliah & Nilai
         Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
@@ -76,6 +66,10 @@ Route::middleware('auth')->group(function () {
 
     // ── Dosen Routes ──
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
+        // Undo / Redo untuk tugas
+        Route::post('/assignments/undo', [AssignmentController::class, 'undo'])->name('assignments.undo');
+        Route::post('/assignments/redo', [AssignmentController::class, 'redo'])->name('assignments.redo');
+
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
         Route::get('/assignments/{assignment}/export', [AssignmentController::class, 'exportGrades'])
@@ -83,8 +77,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
              ->name('submissions.grade');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // ── Admin Routes ──
