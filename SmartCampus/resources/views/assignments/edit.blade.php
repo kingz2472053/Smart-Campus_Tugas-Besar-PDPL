@@ -64,9 +64,8 @@
 
                 <div class="col-md-6">
                     <label for="max_score" class="form-label fw-medium">Skor Maksimal <span class="text-danger">*</span></label>
-                    <input type="number" name="max_score" id="max_score" class="form-control bg-light @error('max_score') is-invalid @enderror"
-                           value="{{ old('max_score', $assignment->max_score) }}" required readonly title="Skor maksimal tidak dapat diubah setelah tugas dibuat">
-                    <small class="text-muted"><i class="bi bi-lock"></i> Skor maksimal terkunci.</small>
+                    <input type="number" name="max_score" id="max_score" class="form-control @error('max_score') is-invalid @enderror"
+                           value="{{ old('max_score', $assignment->max_score) }}" min="1" max="100" required>
                     @error('max_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 

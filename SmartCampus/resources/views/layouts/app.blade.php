@@ -242,7 +242,7 @@
                 <a href="{{ route('mahasiswa.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-journal-text"></i> Daftar Tugas
                 </a>
-                <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
+                <a href="#" class="sc-nav-link">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
                 <a href="#" class="sc-nav-link">

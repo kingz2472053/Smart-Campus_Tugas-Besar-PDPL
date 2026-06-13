@@ -248,15 +248,10 @@ class SubmissionController extends Controller
 
     public function storeGrade(Request $request, Submission $submission)
     {
-        $maxScore = $submission->assignment->max_score; // Ambil skor batas atas
-
-        // 1. Validasi Input (Ubah rule 'max:100' menjadi dinamis 'max:' . $maxScore)
+        // 1. Validasi Input
         $request->validate([
-            'raw_score' => 'required|numeric|min:0|max:' . $maxScore,
+            'raw_score' => 'required|numeric|min:0|max:100',
             'strategy'  => 'required|in:numeric,letter,predicate',
-        ], [
-            // Kustomisasi pesan error agar Dosen paham kenapa ditolak
-            'raw_score.max' => "Nilai yang diberikan tidak boleh melebihi batas skor maksimal tugas ({$maxScore}).",
         ]);
 
         // 2. Pemilihan Strategy (Strategy Pattern)

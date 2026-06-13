@@ -5,8 +5,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\CourseController;
-use App\Http\Controllers\ExportController;
 use Illuminate\Support\Facades\Route;
 
 // ──────────────────────────────────────
@@ -49,13 +47,6 @@ Route::middleware('auth')->group(function () {
 
         // Activity Log (hanya log milik sendiri)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
-
-        // Mata Kuliah & Nilai
-        Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-        Route::get('/courses/{course}/grades', [CourseController::class, 'grades'])->name('courses.grades');
-        
-        // Export (Route yang tadi kita buat)
-        Route::get('/courses/{course}/export', [ExportController::class, 'exportCourseGrades'])->name('courses.export');
     });
 
     // ── Dosen Routes ──
