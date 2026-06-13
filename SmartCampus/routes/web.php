@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ExportController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
     // Dashboard (role-based)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+
+    // Download Submission File (General Auth Route)
+    Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
+
     // ── Mahasiswa Routes ──
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
         // Manajemen Tugas (Read-Only + Submit)
@@ -47,8 +52,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/assignments/{assignment}/submit', [SubmissionController::class, 'store'])->name('submissions.store');
         Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        // Rekap Nilai (Transkrip)
+        Route::get('/transcript', [\App\Http\Controllers\TranscriptController::class, 'index'])->name('transcript');
+
 
         // Mata Kuliah & Nilai
         Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
@@ -60,20 +66,31 @@ Route::middleware('auth')->group(function () {
 
     // ── Dosen Routes ──
     Route::middleware('role:dosen')->prefix('dosen')->name('dosen.')->group(function () {
+        // Undo / Redo untuk tugas
+        Route::post('/assignments/undo', [AssignmentController::class, 'undo'])->name('assignments.undo');
+        Route::post('/assignments/redo', [AssignmentController::class, 'redo'])->name('assignments.redo');
+
         // Manajemen Tugas (Full CRUD via Command Pattern)
         Route::resource('assignments', AssignmentController::class);
+        Route::get('/assignments/{assignment}/export', [AssignmentController::class, 'exportGrades'])
+             ->name('assignments.export');
         Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
              ->name('submissions.grade');
 
-        // Activity Log (hanya log milik sendiri)
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     // ── Admin Routes ──
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        // Manajemen Tugas (Read-Only Overview)
-        Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
-        Route::get('/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+        // User Management (Admin)
+        Route::patch('users/{user}/toggle-active', [\App\Http\Controllers\Admin\UserController::class, 'toggleActive'])->name('users.toggle-active');
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+        
+        // Course Management (Admin)
+        Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
+
+        // Announcement Management (Admin)
+        Route::patch('announcements/{announcement}/toggle-active', [\App\Http\Controllers\Admin\AnnouncementController::class, 'toggleActive'])->name('announcements.toggle-active');
+        Route::resource('announcements', \App\Http\Controllers\Admin\AnnouncementController::class)->except(['show']);
 
         // Activity Log (semua log dari semua user — full access)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');

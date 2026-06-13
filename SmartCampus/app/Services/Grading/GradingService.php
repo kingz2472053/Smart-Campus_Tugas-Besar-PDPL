@@ -27,5 +27,24 @@ class GradingService
         // 2. Pemicu State Pattern Calvin
         // Menggunakan state yang diambil dari model
         $submission->getStateAttribute()->grade($submission);
+
+        // 3. Pemicu Notifikasi MultiChannel (Dashboard + Email)
+        try {
+            $student = $submission->student;
+            if ($student && $student->user) {
+                $assignmentTitle = $submission->assignment->title ?? 'Tugas';
+                $message = "Tugas Anda '{$assignmentTitle}' telah dinilai dengan hasil: {$result} (Nilai mentah: {$rawScore}).";
+                
+                // Kirim notifikasi via Dashboard
+                $dashboardSender = new \App\Services\Notification\DashboardNotificationSender();
+                $dashboardSender->sendNotification($student->user, $message, ['assignment_id' => $submission->assignment_id]);
+
+                // Kirim notifikasi via Email
+                $emailSender = new \App\Services\Notification\EmailNotificationSender();
+                $emailSender->sendNotification($student->user, $message, ['assignment_id' => $submission->assignment_id]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send grading notifications: " . $e->getMessage());
+        }
     }
 }

@@ -28,9 +28,31 @@
 
     {{-- Tombol Buat Tugas (Dosen Only) --}}
     @if(Auth::user()->role === 'dosen')
-        <a href="{{ route('dosen.assignments.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Buat Tugas Baru
-        </a>
+        <div class="d-flex gap-2 align-items-center">
+            {{-- Undo Button --}}
+            <form action="{{ route('dosen.assignments.undo') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-secondary" 
+                        {{ empty(session('task_undo_stack')) ? 'disabled' : '' }} 
+                        title="Undo aksi terakhir">
+                    <i class="bi bi-arrow-counterclockwise"></i> Undo
+                </button>
+            </form>
+            
+            {{-- Redo Button --}}
+            <form action="{{ route('dosen.assignments.redo') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-secondary" 
+                        {{ empty(session('task_redo_stack')) ? 'disabled' : '' }} 
+                        title="Redo aksi terakhir">
+                    <i class="bi bi-arrow-clockwise"></i> Redo
+                </button>
+            </form>
+
+            <a href="{{ route('dosen.assignments.create') }}" class="btn btn-primary ms-1">
+                <i class="bi bi-plus-lg me-1"></i> Buat Tugas Baru
+            </a>
+        </div>
     @endif
 </div>
 
@@ -69,6 +91,7 @@
                 </select>
             </div>
 
+            @if(Auth::user()->role !== 'dosen')
             {{-- Filter: Status Deadline --}}
             <div class="col-md-3">
                 <label class="form-label fw-medium" style="font-size: 0.8rem;">Status Deadline</label>
@@ -79,6 +102,7 @@
                     <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>🔴 Terlambat</option>
                 </select>
             </div>
+            @endif
 
             {{-- Tombol --}}
             <div class="col-md-2 d-flex gap-2">
@@ -104,7 +128,9 @@
                         <th style="font-size: 0.8rem;">Judul Tugas</th>
                         <th style="font-size: 0.8rem;">Mata Kuliah</th>
                         <th style="font-size: 0.8rem;">Deadline</th>
+                        @if(Auth::user()->role !== 'dosen')
                         <th style="font-size: 0.8rem; text-align: center;">Status</th>
+                        @endif
                         
                         {{-- Kolom Skor/Nilai --}}
                         <th style="font-size: 0.8rem; text-align: center;">
@@ -125,7 +151,7 @@
                             $deadline = $assignment->deadline;
                             if ($deadline < $now) {
                                 $badgeClass = 'bg-danger';
-                                $badgeText = 'Terlambat';
+                                $badgeText = Auth::user()->role === 'mahasiswa' ? 'Terlambat' : 'Ditutup';
                                 $badgeIcon = '🔴';
                             } elseif ($deadline <= $now->copy()->addDays(3)) {
                                 $badgeClass = 'bg-warning text-dark';
@@ -160,11 +186,13 @@
                             <td style="font-size: 0.85rem;">
                                 {{ $deadline->format('d M Y, H:i') }}
                             </td>
+                            @if(Auth::user()->role !== 'dosen')
                             <td style="text-align: center;">
                                 <span class="badge {{ $badgeClass }}" style="font-size: 0.7rem;">
                                     {{ $badgeIcon }} {{ $badgeText }}
                                 </span>
                             </td>
+                            @endif
                             <td style="font-size: 0.85rem; text-align: center;">
                                 @if(Auth::user()->role === 'mahasiswa')
                                     @php

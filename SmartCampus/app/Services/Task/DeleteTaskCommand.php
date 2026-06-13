@@ -37,6 +37,10 @@ class DeleteTaskCommand implements TaskCommandInterface
     ) {
         // Simpan ID dan snapshot sebelum penghapusan
         $this->assignmentId = $this->assignment->id;
+        
+        // Eager load submissions dan grades terkait agar tersimpan di snapshot
+        $this->assignment->load('submissions.grades');
+        
         $this->snapshot = $this->assignment->toArray();
     }
 

@@ -42,6 +42,32 @@ class CreateTaskCommand implements TaskCommandInterface
     {
         $this->createdAssignment = Assignment::create($this->data);
 
+        if ($this->createdAssignment) {
+            try {
+                // Ambil semua mahasiswa yang mengambil kelas ini
+                $enrollments = \App\Models\Enrollment::where('course_id', $this->createdAssignment->course_id)
+                    ->with('student.user')
+                    ->get();
+
+                $sender = new \App\Services\Notification\DashboardNotificationSender();
+                $courseName = $this->createdAssignment->course->name ?? 'Mata Kuliah';
+                $deadline = $this->createdAssignment->deadline ? $this->createdAssignment->deadline->format('d M Y, H:i') : '-';
+
+                foreach ($enrollments as $enrollment) {
+                    if ($enrollment->student && $enrollment->student->user) {
+                        $sender->sendNotification(
+                            $enrollment->student->user,
+                            "Tugas baru dipublikasikan: '{$this->createdAssignment->title}' untuk mata kuliah {$courseName} (Deadline: {$deadline}).",
+                            ['assignment_id' => $this->createdAssignment->id]
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                // Tangkap jika terjadi error relasi agar proses creation tidak gagal
+                \Illuminate\Support\Facades\Log::error("Failed to notify students on task creation: " . $e->getMessage());
+            }
+        }
+
         return $this->createdAssignment;
     }
 

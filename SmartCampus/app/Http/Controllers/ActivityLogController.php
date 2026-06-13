@@ -26,16 +26,17 @@ class ActivityLogController extends Controller
         $user = $request->user();
         $logger = ActivityLogger::getInstance();
 
+        // Guard: Hanya admin yang boleh mengakses Riwayat Aktivitas
+        if ($user->role !== 'admin') {
+            abort(403, 'Akses ditolak. Hanya administrator yang dapat melihat riwayat aktivitas.');
+        }
+
         // Bangun filter dari query string
         $filters = [];
 
-        // Admin bisa filter berdasarkan user, non-admin hanya lihat milik sendiri
-        if ($user->role === 'admin') {
-            if ($request->filled('user_id')) {
-                $filters['user_id'] = $request->user_id;
-            }
-        } else {
-            $filters['user_id'] = $user->id;
+        // Admin bisa filter berdasarkan user
+        if ($request->filled('user_id')) {
+            $filters['user_id'] = $request->user_id;
         }
 
         if ($request->filled('action')) {
@@ -73,8 +74,8 @@ class ActivityLogController extends Controller
         $user = request()->user();
         $log = \App\Models\ActivityLog::with('user')->findOrFail($id);
 
-        // Non-admin hanya bisa lihat log milik sendiri
-        if ($user->role !== 'admin' && $log->user_id !== $user->id) {
+        // Guard: Hanya admin yang boleh melihat detail log
+        if ($user->role !== 'admin') {
             abort(403, 'Anda tidak memiliki akses ke log ini.');
         }
 

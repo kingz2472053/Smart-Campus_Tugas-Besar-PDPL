@@ -167,6 +167,30 @@ class SmartCampusSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Dr. Budi → IN236 RPL
+        $rpl = Course::create([
+            'lecturer_id' => $budi->lecturer->id,
+            'name' => 'Rekayasa Perangkat Lunak',
+            'code' => 'IN236',
+            'sks' => 3,
+            'semester' => 'Genap 2025/2026',
+            'kuota' => 40,
+            'description' => 'Mata kuliah dasar tentang proses, metode, dan alat bantu pengembangan perangkat lunak.',
+            'is_active' => true,
+        ]);
+
+        // Dr. Budi → IN237 PBO
+        $pbo = Course::create([
+            'lecturer_id' => $budi->lecturer->id,
+            'name' => 'Pemrograman Berorientasi Objek',
+            'code' => 'IN237',
+            'sks' => 3,
+            'semester' => 'Ganjil 2025/2026',
+            'kuota' => 40,
+            'description' => 'Mata kuliah tentang pemrograman dengan paradigma orientasi objek.',
+            'is_active' => true,
+        ]);
+
         // Prof. Ahmad → MK017 Pancasila
         $pancasila = Course::create([
             'lecturer_id' => $ahmad->lecturer->id,
@@ -234,14 +258,17 @@ class SmartCampusSeeder extends Seeder
         $adminId = User::where('role', 'admin')->first()->id;
 
         $enrollData = [
-            // Francisco: PDPL, Web Dasar, Statistika, Pancasila
+            // Francisco: PDPL, RPL, PBO, Web Dasar, Statistika, Pancasila
             [$francisco->student->id, $pdpl->id],
+            [$francisco->student->id, $rpl->id],
+            [$francisco->student->id, $pbo->id],
             [$francisco->student->id, $webDasar->id],
             [$francisco->student->id, $statistika->id],
             [$francisco->student->id, $pancasila->id],
 
-            // Juan: PDPL, Web Dasar, Kecerdasan Mesin, Strategi Algoritmik, Pancasila
+            // Juan: PDPL, RPL, Web Dasar, Kecerdasan Mesin, Strategi Algoritmik, Pancasila
             [$juan->student->id, $pdpl->id],
+            [$juan->student->id, $rpl->id],
             [$juan->student->id, $webDasar->id],
             [$juan->student->id, $kecerdasanMesin->id],
             [$juan->student->id, $stratAlgo->id],
