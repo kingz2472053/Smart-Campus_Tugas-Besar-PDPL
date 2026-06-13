@@ -22,14 +22,41 @@ class CourseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code' => 'required|string|max:20|unique:courses',
+            'academic_year' => 'required|string|max:50',
+            'code' => 'required|string|max:20',
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'sks' => 'required|integer',
+            'semester' => 'required|string',
+            'classes' => 'required|array|min:1',
+            'classes.*.class_name' => 'required|string|max:10',
+            'classes.*.lecturer_id' => 'required|exists:lecturers,id',
+            'classes.*.kuota' => 'required|integer',
         ]);
 
-        Course::create($request->all());
+        foreach ($request->classes as $class) {
+            // Cek apakah kombinasi unik sudah ada
+            $exists = Course::where('code', $request->code)
+                            ->where('class_name', $class['class_name'])
+                            ->where('academic_year', $request->academic_year)
+                            ->exists();
 
-        return redirect()->route('admin.courses.index')->with('success', 'Mata Kuliah berhasil dibuat.');
+            if ($exists) {
+                return back()->with('error', "Kelas {$class['class_name']} untuk Mata Kuliah {$request->code} di Tahun Ajaran {$request->academic_year} sudah ada.")->withInput();
+            }
+
+            Course::create([
+                'academic_year' => $request->academic_year,
+                'code' => $request->code,
+                'name' => $request->name,
+                'sks' => $request->sks,
+                'semester' => $request->semester,
+                'class_name' => $class['class_name'],
+                'lecturer_id' => $class['lecturer_id'],
+                'kuota' => $class['kuota'],
+            ]);
+        }
+
+        return redirect()->route('admin.courses.index')->with('success', 'Mata Kuliah beserta kelasnya berhasil dibuat.');
     }
 
     public function show(string $id)

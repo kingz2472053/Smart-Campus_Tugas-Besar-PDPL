@@ -112,7 +112,9 @@
                                         <td style="font-size:0.85rem">{{ $sub->student->nim ?? '-' }}</td>
                                         <td style="font-size:0.85rem">
                                             @if($sub->file_name)
-                                                <i class="bi bi-file-earmark me-1"></i>{{ $sub->file_name }}
+                                                <a href="{{ route('submissions.download', $sub) }}" class="text-decoration-none">
+                                                    <i class="bi bi-file-earmark me-1"></i>{{ $sub->file_name }}
+                                                </a>
                                                 <small class="text-muted">({{ $sub->file_size_kb }} KB)</small>
                                             @else
                                                 <span class="text-muted">-</span>
@@ -168,7 +170,8 @@
                         <div class="alert alert-info d-flex align-items-center mb-3">
                             <i class="bi bi-check-circle me-2"></i>
                             <div>
-                                <strong>Sudah dikumpulkan:</strong> {{ $mySubmission->file_name }}
+                                <strong>Sudah dikumpulkan:</strong> 
+                                <a href="{{ route('submissions.download', $mySubmission) }}" class="text-decoration-none fw-bold">{{ $mySubmission->file_name }}</a>
                                 <small class="text-muted">({{ $mySubmission->file_size_kb }} KB)</small>
                                 <br>
                                 <small>Waktu: {{ $mySubmission->submitted_at->format('d M Y H:i') }}

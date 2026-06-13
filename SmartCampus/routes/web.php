@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function () {
     // Dashboard (role-based)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Download Submission File (General Auth Route)
+    Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
+
     // ── Mahasiswa Routes ──
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
         // Manajemen Tugas (Read-Only + Submit)
@@ -77,10 +80,15 @@ Route::middleware('auth')->group(function () {
     // ── Admin Routes ──
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         // User Management (Admin)
+        Route::patch('users/{user}/toggle-active', [\App\Http\Controllers\Admin\UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
         
         // Course Management (Admin)
         Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
+
+        // Announcement Management (Admin)
+        Route::patch('announcements/{announcement}/toggle-active', [\App\Http\Controllers\Admin\AnnouncementController::class, 'toggleActive'])->name('announcements.toggle-active');
+        Route::resource('announcements', \App\Http\Controllers\Admin\AnnouncementController::class)->except(['show']);
 
         // Activity Log (semua log dari semua user — full access)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');

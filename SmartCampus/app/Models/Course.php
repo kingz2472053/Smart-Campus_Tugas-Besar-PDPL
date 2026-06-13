@@ -12,6 +12,8 @@ class Course extends Model
         'lecturer_id',
         'name',
         'code',
+        'class_name',
+        'academic_year',
         'sks',
         'semester',
         'kuota',

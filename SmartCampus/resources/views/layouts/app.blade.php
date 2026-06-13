@@ -245,14 +245,7 @@
                 <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="{{ route('mahasiswa.transcript') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.transcript') ? 'active' : '' }}">
-                    <i class="bi bi-file-earmark-bar-graph"></i> Rekap Nilai
-                </a>
 
-                <div class="sc-nav-section-title mt-3">Riwayat</div>
-                <a href="{{ route('mahasiswa.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.activity-logs.*') ? 'active' : '' }}">
-                    <i class="bi bi-clock-history"></i> Riwayat Aktivitas
-                </a>
             @endif
 
             {{-- Dosen Menu --}}
@@ -265,10 +258,6 @@
                     <i class="bi bi-check2-square"></i> Penilaian
                 </a> --}}
 
-                <div class="sc-nav-section-title mt-3">Riwayat</div>
-                <a href="{{ route('dosen.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.activity-logs.*') ? 'active' : '' }}">
-                    <i class="bi bi-clock-history"></i> Riwayat Aktivitas
-                </a>
             @endif
 
             {{-- Admin Menu --}}
@@ -280,7 +269,11 @@
                 <a href="{{ route('admin.courses.index') }}" class="sc-nav-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
+                <a href="{{ route('admin.announcements.index') }}" class="sc-nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+                    <i class="bi bi-megaphone"></i> Pengumuman
+                </a>
 
+                <div class="sc-nav-section-title mt-3">Riwayat</div>
                 <a href="{{ route('admin.activity-logs.index') }}" class="sc-nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> Activity Log
                 </a>

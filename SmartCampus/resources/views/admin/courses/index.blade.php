@@ -17,6 +17,8 @@
                     <tr>
                         <th>Kode</th>
                         <th>Nama Mata Kuliah</th>
+                        <th>Kelas</th>
+                        <th>Tahun Ajaran</th>
                         <th>Dosen Pengampu</th>
                         <th class="text-end">Aksi</th>
                     </tr>
@@ -26,6 +28,8 @@
                     <tr>
                         <td class="align-middle fw-medium">{{ $course->code }}</td>
                         <td class="align-middle">{{ $course->name }}</td>
+                        <td class="align-middle"><span class="badge bg-primary">{{ $course->class_name }}</span></td>
+                        <td class="align-middle text-muted">{{ $course->academic_year }}</td>
                         <td class="align-middle text-muted">{{ $course->lecturer->user->name ?? '-' }}</td>
                         <td class="align-middle text-end">
                             <form action="{{ route('admin.courses.destroy', $course) }}" method="POST" class="d-inline">

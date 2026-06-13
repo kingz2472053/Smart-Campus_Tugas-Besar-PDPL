@@ -7,9 +7,6 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1"><i class="bi bi-clock-history me-2"></i>Riwayat Aktivitas</h4>
-        <p class="text-muted mb-0" style="font-size: 0.85rem;">
-            Catatan seluruh aktivitas sistem — dicatat melalui <strong>Singleton Pattern (ActivityLogger)</strong>
-        </p>
     </div>
     <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" style="font-size: 0.8rem;">
         <i class="bi bi-database me-1"></i> {{ $logs->count() }} entri ditemukan
