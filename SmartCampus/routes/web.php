@@ -42,6 +42,13 @@ Route::middleware('auth')->group(function () {
     // Download Submission File (General Auth Route)
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
 
+    // Notifikasi (Semua User Auth)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread', [NotificationController::class, 'getUnread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
     // ── Mahasiswa Routes ──
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
         // Manajemen Tugas (Read-Only + Submit)
@@ -62,6 +69,10 @@ Route::middleware('auth')->group(function () {
         
         // Export (Route yang tadi kita buat)
         Route::get('/courses/{course}/export', [ExportController::class, 'exportCourseGrades'])->name('courses.export');
+
+        // Enrollment (Pendaftaran Kelas)
+        Route::get('/enrollments', [\App\Http\Controllers\Mahasiswa\EnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::post('/enrollments/{course}', [\App\Http\Controllers\Mahasiswa\EnrollmentController::class, 'store'])->name('enrollments.store');
     });
 
     // ── Dosen Routes ──
@@ -77,6 +88,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/submissions/{submission}/grade', [SubmissionController::class, 'storeGrade'])
              ->name('submissions.grade');
 
+        // Monitor Kelas (Dosen)
+        Route::get('/courses', [\App\Http\Controllers\Dosen\CourseController::class, 'index'])->name('courses.index');
+        Route::get('/courses/{course}', [\App\Http\Controllers\Dosen\CourseController::class, 'show'])->name('courses.show');
     });
 
     // ── Admin Routes ──
@@ -95,5 +109,12 @@ Route::middleware('auth')->group(function () {
         // Activity Log (semua log dari semua user — full access)
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
         Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
+
+        // Enrollment Management (Admin)
+        Route::get('/enrollments', [\App\Http\Controllers\Admin\EnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::post('/enrollments', [\App\Http\Controllers\Admin\EnrollmentController::class, 'store'])->name('enrollments.store');
+        Route::patch('/enrollments/{enrollment}/approve', [\App\Http\Controllers\Admin\EnrollmentController::class, 'approve'])->name('enrollments.approve');
+        Route::delete('/enrollments/{enrollment}/reject', [\App\Http\Controllers\Admin\EnrollmentController::class, 'reject'])->name('enrollments.reject');
+        Route::delete('/enrollments/{enrollment}', [\App\Http\Controllers\Admin\EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
     });
 });
