@@ -362,7 +362,7 @@
                 <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="{{ route('enrollments.index') }}" class="sc-nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}">
+                <a href={{--"{{ route('enrollments.index') }}"--}} class="sc-nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}">
                     <i class="bi bi-compass"></i> Eksplor Kelas
                 </a>
                 <a href="{{ route('notifications.index') }}" class="sc-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
@@ -486,17 +486,21 @@
             const themeToggleBtn = document.getElementById('theme-toggle');
             const themeIcon = document.getElementById('theme-icon');
             const htmlElement = document.documentElement;
-
+    
             function updateThemeUI() {
                 if (htmlElement.classList.contains('dark')) {
                     themeIcon.className = 'bi bi-moon-stars-fill';
                     themeIcon.style.color = '#94A3B8';
+                    // Trigger Dark Mode untuk Bootstrap 5
+                    htmlElement.setAttribute('data-bs-theme', 'dark');
                 } else {
                     themeIcon.className = 'bi bi-sun-fill';
                     themeIcon.style.color = '#EAB308';
+                    // Trigger Light Mode untuk Bootstrap 5
+                    htmlElement.setAttribute('data-bs-theme', 'light');
                 }
             }
-
+    
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 htmlElement.classList.add('dark');
             } else {
@@ -504,7 +508,7 @@
             }
             
             updateThemeUI();
-
+    
             if (themeToggleBtn) {
                 themeToggleBtn.addEventListener('click', function() {
                     if (htmlElement.classList.contains('dark')) {
