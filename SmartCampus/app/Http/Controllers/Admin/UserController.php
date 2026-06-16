@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -33,55 +34,68 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
             'role' => 'required|in:dosen,mahasiswa',
-            'angkatan' => 'required_if:role,mahasiswa|nullable|string|max:10',
-            'department' => 'required_if:role,dosen|nullable|string|max:255',
+            'users' => 'required|array|min:1',
+            'users.*.name' => 'required|string|max:255',
+            'users.*.email' => 'required|string|email|max:255|unique:users,email',
+            'users.*.attribute' => 'required|string|max:255', // Angkatan for Mahasiswa, Dept for Dosen
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+        $generatedUsers = [];
 
-        if ($request->role === 'mahasiswa') {
-            $nim = $request->nim;
-            if (!$nim) {
-                // Format: {YY}72{XXX}
-                // YY = 2 digit terakhir angkatan, 72 = kode prodi, XXX = urutan
-                $yearPrefix = substr($request->angkatan, -2);
-                $prefix = $yearPrefix . '72';
-                
-                $latestStudent = \App\Models\Student::where('nim', 'like', $prefix . '%')
-                                    ->orderBy('nim', 'desc')
-                                    ->first();
-                
-                if ($latestStudent) {
-                    $lastSequence = (int) substr($latestStudent->nim, -3);
-                    $newSequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
-                } else {
-                    $newSequence = '001';
+        foreach ($request->users as $userData) {
+            $plainPassword = Str::random(8); // Auto-generate password
+
+            $user = User::create([
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'password' => Hash::make($plainPassword),
+                'role' => $request->role,
+            ]);
+
+            if ($request->role === 'mahasiswa') {
+                $nim = $userData['identifier'] ?? null;
+                $angkatan = $userData['attribute'];
+
+                if (!$nim) {
+                    $yearPrefix = substr($angkatan, -2);
+                    $prefix = $yearPrefix . '72';
+                    
+                    $latestStudent = \App\Models\Student::where('nim', 'like', $prefix . '%')
+                                        ->orderBy('nim', 'desc')
+                                        ->first();
+                    
+                    if ($latestStudent) {
+                        $lastSequence = (int) substr($latestStudent->nim, -3);
+                        $newSequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
+                    } else {
+                        $newSequence = '001';
+                    }
+                    $nim = $prefix . $newSequence;
                 }
-                $nim = $prefix . $newSequence;
+
+                $user->student()->create([
+                    'nim' => $nim,
+                    'program_studi' => 'Teknik Informatika',
+                    'angkatan' => $angkatan,
+                ]);
+            } elseif ($request->role === 'dosen') {
+                $user->lecturer()->create([
+                    'nip' => !empty($userData['identifier']) ? $userData['identifier'] : 'NIP' . rand(10000, 99999),
+                    'department' => $userData['attribute'],
+                ]);
             }
 
-            $user->student()->create([
-                'nim' => $nim,
-                'program_studi' => 'Teknik Informatika', // Hardcode karena scope 1 prodi
-                'angkatan' => $request->angkatan,
-            ]);
-        } elseif ($request->role === 'dosen') {
-            $user->lecturer()->create([
-                'nip' => $request->nip ?: 'NIP' . rand(10000, 99999),
-                'department' => $request->department,
-            ]);
+            $generatedUsers[] = [
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'password' => $plainPassword
+            ];
         }
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil dibuat.');
+        return redirect()->route('admin.users.index', ['role' => $request->role])
+                         ->with('success', count($generatedUsers) . ' pengguna berhasil dibuat.')
+                         ->with('generated_users', $generatedUsers);
     }
 
     public function show(string $id)

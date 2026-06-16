@@ -362,8 +362,12 @@
                 <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-
-
+                <a href="{{ route('enrollments.index') }}" class="sc-nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}">
+                    <i class="bi bi-compass"></i> Eksplor Kelas
+                </a>
+                <a href="{{ route('notifications.index') }}" class="sc-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                    <i class="bi bi-bell"></i> Notifikasi
+                </a>
             @endif
 
             {{-- Menu untuk Dosen --}}
@@ -371,6 +375,12 @@
                 <div class="sc-nav-section-title mt-3">Manajemen</div>
                 <a href="{{ route('dosen.assignments.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-clipboard-plus"></i> Kelola Tugas
+                </a>
+                <a href="{{ route('dosen.courses.index') }}" class="sc-nav-link {{ request()->routeIs('dosen.courses.*') ? 'active' : '' }}">
+                    <i class="bi bi-people"></i> Monitor Kelas
+                </a>
+                <a href="{{ route('notifications.index') }}" class="sc-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                    <i class="bi bi-bell"></i> Notifikasi
                 </a>
             @endif
 
@@ -382,6 +392,9 @@
                 </a>
                 <a href="{{ route('admin.courses.index') }}" class="sc-nav-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
+                </a>
+                <a href="{{ route('admin.enrollments.index') }}" class="sc-nav-link {{ request()->routeIs('admin.enrollments.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-check"></i> Kelola Enrollment
                 </a>
                 <a href="{{ route('admin.announcements.index') }}" class="sc-nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
                     <i class="bi bi-megaphone"></i> Pengumuman

@@ -9,6 +9,34 @@
     </a>
 </div>
 
+@if(session('generated_users'))
+    <div class="alert alert-success shadow-sm border-0 mb-4">
+        <h5 class="alert-heading fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Pengguna Berhasil Ditambahkan!</h5>
+        <p class="mb-2">Berikut adalah kredensial akun yang baru saja dibuat. <strong>Pastikan Anda menyimpan atau menyalin password ini sekarang</strong>, karena password dienkripsi di database dan tidak dapat dilihat lagi setelah Anda meninggalkan halaman ini.</p>
+        
+        <div class="table-responsive bg-white rounded p-2 mt-3 border">
+            <table class="table table-sm table-borderless mb-0">
+                <thead class="text-muted border-bottom">
+                    <tr>
+                        <th>Nama</th>
+                        <th>Email</th>
+                        <th>Password (Otomatis)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(session('generated_users') as $u)
+                        <tr>
+                            <td class="fw-medium">{{ $u['name'] }}</td>
+                            <td>{{ $u['email'] }}</td>
+                            <td><code class="fs-6 text-dark bg-light px-2 py-1 rounded border">{{ $u['password'] }}</code></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
+
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white pt-3 pb-0 border-bottom-0">
         <ul class="nav nav-tabs border-bottom-0">
