@@ -34,7 +34,11 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Semester Target</label>
-                    <input type="text" name="semester" class="form-control" value="1" required>
+                    <select name="semester" class="form-select" required>
+                        @for($i = 1; $i <= 8; $i++)
+                            <option value="{{ $i }}" {{ $i == 1 ? 'selected' : '' }}>Semester {{ $i }}</option>
+                        @endfor
+                    </select>
                 </div>
             </div>
 
