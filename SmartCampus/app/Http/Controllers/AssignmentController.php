@@ -253,10 +253,11 @@ class AssignmentController extends Controller
         $message = $this->invoker->undo($user->id);
 
         if ($message) {
-            return redirect()->back()->with('success', $message);
+            // Ubah redirect()->back() menjadi redirect()->route(...)
+            return redirect()->route('dosen.assignments.index')->with('success', $message);
         }
 
-        return redirect()->back()->with('error', 'Tidak ada aksi yang bisa dibatalkan.');
+        return redirect()->route('dosen.assignments.index')->with('error', 'Tidak ada aksi yang bisa dibatalkan.');
     }
 
     /**
@@ -272,10 +273,11 @@ class AssignmentController extends Controller
         $message = $this->invoker->redo($user->id);
 
         if ($message) {
-            return redirect()->back()->with('success', $message);
+            // Ubah redirect()->back() menjadi redirect()->route(...)
+            return redirect()->route('dosen.assignments.index')->with('success', $message);
         }
 
-        return redirect()->back()->with('error', 'Tidak ada aksi yang bisa dijalankan kembali.');
+        return redirect()->route('dosen.assignments.index')->with('error', 'Tidak ada aksi yang bisa dikembalikan.');
     }
 
     /**

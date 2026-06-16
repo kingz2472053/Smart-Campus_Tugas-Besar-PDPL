@@ -89,35 +89,40 @@
 
                             <!-- Content -->
                             <div class="flex-grow-1">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                                    <h6 class="mb-0 fw-semibold text-dark">
+                                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-1">
+                                    
+                                    <h6 class="mb-0 fw-semibold text-dark mt-1">
                                         @if($notif->assignment)
                                             {{ $notif->assignment->course?->name ?? 'Mata Kuliah' }} — {{ $notif->assignment->title }}
                                         @else
                                             Pemberitahuan Sistem
                                         @endif
                                     </h6>
-                                    <span class="text-muted small fw-medium">
-                                        <i class="bi bi-clock me-1"></i>{{ $notif->sent_at ? $notif->sent_at->diffForHumans() : $notif->created_at->diffForHumans() }}
-                                    </span>
+                                    
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="text-muted small fw-medium text-nowrap">
+                                            <i class="bi bi-clock me-1"></i>{{ $notif->sent_at ? $notif->sent_at->diffForHumans() : $notif->created_at->diffForHumans() }}
+                                        </span>
+                                        
+                                        <div class="d-flex align-items-center gap-2 border-start ps-3">
+                                            @if(!$notif->is_read)
+                                                <button class="btn btn-link text-primary p-0 btn-mark-read" data-id="{{ $notif->id }}" title="Tandai Terbaca">
+                                                    <i class="bi bi-check-circle-fill fs-5"></i>
+                                                </button>
+                                            @endif
+                                            <form action="{{ route('notifications.destroy', $notif->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus notifikasi ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-link text-danger p-0" title="Hapus Notifikasi">
+                                                    <i class="bi bi-trash3-fill fs-5"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    
                                 </div>
-                                <p class="text-secondary small mb-0 pe-5">{{ $notif->message }}</p>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="d-flex align-items-center gap-1 position-absolute end-0 top-0 mt-4 me-4">
-                                @if(!$notif->is_read)
-                                    <button class="btn btn-link text-primary p-0 btn-mark-read" data-id="{{ $notif->id }}" title="Tandai Terbaca">
-                                        <i class="bi bi-check-circle-fill fs-5"></i>
-                                    </button>
-                                @endif
-                                <form action="{{ route('notifications.destroy', $notif->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus notifikasi ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-link text-danger p-0" title="Hapus Notifikasi">
-                                        <i class="bi bi-trash3-fill fs-5"></i>
-                                    </button>
-                                </form>
+                                
+                                <p class="text-secondary small mb-0">{{ $notif->message }}</p>
                             </div>
                         </div>
                     </div>

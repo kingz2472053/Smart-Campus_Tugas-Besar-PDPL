@@ -60,7 +60,7 @@ class Submission extends Model
     {
         return match($this->status) {
             'draft'     => new DraftState(),
-            'submitted' => new SubmittedState(), 
+            'submitted', 'late' => new SubmittedState(), 
             'graded'    => new GradedState(),
             default     => new DraftState(),
         };

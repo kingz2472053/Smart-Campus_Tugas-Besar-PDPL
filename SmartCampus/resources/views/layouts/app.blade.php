@@ -362,7 +362,7 @@
                 <a href="{{ route('mahasiswa.courses.index') }}" class="sc-nav-link {{ request()->routeIs('mahasiswa.courses.*') ? 'active' : '' }}">
                     <i class="bi bi-book"></i> Mata Kuliah
                 </a>
-                <a href="{{ route('enrollments.index') }}" class="sc-nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}">
+                <a href="{{ route('mahasiswa.enrollments.index') }}" class="sc-nav-link {{ request()->routeIs('enrollments.*') ? 'active' : '' }}">
                     <i class="bi bi-compass"></i> Eksplor Kelas
                 </a>
                 <a href="{{ route('notifications.index') }}" class="sc-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">

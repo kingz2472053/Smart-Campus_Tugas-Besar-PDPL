@@ -15,7 +15,6 @@ class ExportController extends Controller
     {
         $format = $request->query('format', 'pdf');
         
-        // 2. Gunakan Facade Auth dan tambahkan type-hint untuk IDE
         /** @var \App\Models\User $user */
         $user = Auth::user();
         
@@ -25,16 +24,16 @@ class ExportController extends Controller
             abort(403, 'Anda bukan mahasiswa.');
         }
 
-        // Ambil data nilai khusus untuk mahasiswa ini, pada course ini
-        $grades = Grade::whereHas('submission', function($query) use ($course, $studentId) {
-            $query->where('student_id', $studentId)
-                  ->whereHas('assignment', function($q) use ($course) {
-                      $q->where('course_id', $course->id);
-                  });
-        })->get();
+        // UBAH KUERI: Ambil dari Assignment, bukan Grade
+        $assignments = $course->assignments()
+            ->with(['submissions' => function ($query) use ($studentId) {
+                $query->where('student_id', $studentId)->with('latestGrade');
+            }])
+            ->orderBy('deadline', 'desc')
+            ->get();
 
-        if ($grades->isEmpty()) {
-            return back()->with('error', 'Tidak ada data nilai untuk diekspor.');
+        if ($assignments->isEmpty()) {
+            return back()->with('error', 'Tidak ada tugas untuk diekspor.');
         }
 
         $strategy = match ($format) {
@@ -42,6 +41,7 @@ class ExportController extends Controller
             default => new PdfExportStrategy(),
         };
 
-        return $strategy->export($grades, $course->name);
+        // Kirim data $assignments, bukan $grades
+        return $strategy->export($assignments, $course->name);
     }
 }

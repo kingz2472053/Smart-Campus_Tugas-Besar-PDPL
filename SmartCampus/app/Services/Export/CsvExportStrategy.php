@@ -9,14 +9,13 @@ use Illuminate\Support\Facades\Auth; // 1. PASTIKAN INI SUDAH DIIMPOR
 
 class CsvExportStrategy implements ExportStrategyInterface
 {
-    public function export(Collection $grades, string $courseName)
+    public function export(Collection $assignments, string $courseName)
     {
         $fileName = 'Laporan_Nilai_' . str_replace(' ', '_', $courseName) . '.csv';
 
-        return new StreamedResponse(function () use ($grades, $courseName) {
+        return new StreamedResponse(function () use ($assignments, $courseName) {
             $handle = fopen('php://output', 'w');
 
-            // 2. Ambil data user dengan type-hint di dalam closure
             /** @var \App\Models\User $user */
             $user = Auth::user();
 
@@ -24,19 +23,21 @@ class CsvExportStrategy implements ExportStrategyInterface
             fputs($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
             
             fputcsv($handle, ['Laporan Nilai', $courseName]);
-            fputcsv($handle, ['Mahasiswa', $user->name]); // Gunakan variabel $user
+            fputcsv($handle, ['Mahasiswa', $user->name]);
             fputcsv($handle, []);
             
             fputcsv($handle, ['No', 'Judul Tugas', 'Waktu Kumpul', 'Nilai', 'Skor Maks']);
 
             $no = 1;
-            foreach ($grades as $grade) {
+            // Looping melalui $assignments
+            foreach ($assignments as $assignment) {
+                $sub = $assignment->submissions->first();
                 fputcsv($handle, [
                     $no++,
-                    $grade->submission->assignment->title ?? 'Tugas Dihapus',
-                    $grade->created_at->format('Y-m-d H:i:s'),
-                    $grade->result,
-                    $grade->submission->assignment->max_score ?? '-'
+                    $assignment->title,
+                    $sub && $sub->submitted_at ? $sub->submitted_at->format('Y-m-d H:i:s') : 'Belum Kumpul',
+                    $sub && $sub->latestGrade ? $sub->latestGrade->result : '-',
+                    $assignment->max_score
                 ]);
             }
 

@@ -35,13 +35,19 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($grades as $index => $grade)
+            {{-- Ubah looping menjadi $assignments --}}
+            @foreach($assignments as $index => $assignment)
+            @php
+                $sub = $assignment->submissions->first();
+            @endphp
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
-                <td>{{ $grade->submission->assignment->title ?? 'Tugas Dihapus' }}</td>
-                <td>{{ $grade->created_at->format('d M Y, H:i') }}</td>
-                <td class="text-center"><strong>{{ $grade->result }}</strong></td>
-                <td class="text-center">{{ $grade->submission->assignment->max_score ?? '-' }}</td>
+                <td>{{ $assignment->title }}</td>
+                <td>{{ $sub && $sub->submitted_at ? $sub->submitted_at->format('d M Y, H:i') : '-' }}</td>
+                <td class="text-center">
+                    <strong>{{ $sub && $sub->latestGrade ? $sub->latestGrade->result : '-' }}</strong>
+                </td>
+                <td class="text-center">{{ $assignment->max_score }}</td>
             </tr>
             @endforeach
         </tbody>
