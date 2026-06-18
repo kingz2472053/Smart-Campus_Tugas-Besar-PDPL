@@ -33,8 +33,9 @@ class SendDeadlineReminders extends Command
         $this->info("Memulai pengecekan tugas H-1...");
 
         // 1. Cari tugas yang deadline-nya besok (H-1)
-        $tomorrow = Carbon::tomorrow()->toDateString();
-        $assignments = Assignment::whereDate('deadline', $tomorrow)->get();
+        // Gunakan toDateString() agar akurat format (YYYY-MM-DD)
+        $tomorrowDate = Carbon::tomorrow()->toDateString();
+        $assignments = Assignment::whereDate('deadline', $tomorrowDate)->get();
 
         if ($assignments->isEmpty()) {
             $this->info("Tidak ada tugas yang deadline besok.");
@@ -45,19 +46,20 @@ class SendDeadlineReminders extends Command
         $notifier = new DeadlineNotifier();
 
         foreach ($assignments as $assignment) {
-            // 2. Ambil semua ID mahasiswa yang terdaftar (enrollments) di MK tugas ini
+            // 2. Ambil semua ID mahasiswa yang terdaftar (enrollments)
             $enrolledStudentIds = Enrollment::where('course_id', $assignment->course_id)
                 ->where('status', 'active')
                 ->pluck('student_id')
                 ->toArray();
 
-            // 3. Ambil ID mahasiswa yang sudah mengumpulkan (progress = 'completed')
+            // 3. BUG FIX: Cek berdasarkan 'status' string, bukan 'progress'
+            // Mahasiswa dianggap "aman" jika statusnya bukan 'draft'
             $completedStudentIds = Submission::where('assignment_id', $assignment->id)
-                ->where('progress', 'completed')
+                ->where('status', '!=', 'draft')
                 ->pluck('student_id')
                 ->toArray();
 
-            // 4. Filter: Targetkan hanya yang BELUM completed
+            // 4. Filter: Targetkan hanya yang BELUM submit (yang statusnya masih draft)
             $targetStudentIds = array_diff($enrolledStudentIds, $completedStudentIds);
 
             if (!empty($targetStudentIds)) {
@@ -68,6 +70,8 @@ class SendDeadlineReminders extends Command
                 
                 // 5. Trigger observer!
                 $assignment->notifyObservers($targetStudentIds);
+            } else {
+                $this->info("Tugas '{$assignment->title}' H-1 terdeteksi, tapi semua mahasiswa sudah mengumpulkan tugas.");
             }
         }
 

@@ -258,24 +258,28 @@ class SmartCampusSeeder extends Seeder
         $adminId = User::where('role', 'admin')->first()->id;
 
         $enrollData = [
-            // Francisco: PDPL, RPL, PBO, Web Dasar, Statistika, Pancasila
+            // PASTIKAN SEMUA MAHASISWA MENGAMBIL PDPL UNTUK DEMO
             [$francisco->student->id, $pdpl->id],
+            [$juan->student->id, $pdpl->id],
+            [$calvin->student->id, $pdpl->id],
+            [$dave->student->id, $pdpl->id],
+            [$andi->student->id, $pdpl->id],
+
+            // Francisco: RPL, PBO, Web Dasar, Statistika, Pancasila
             [$francisco->student->id, $rpl->id],
             [$francisco->student->id, $pbo->id],
             [$francisco->student->id, $webDasar->id],
             [$francisco->student->id, $statistika->id],
             [$francisco->student->id, $pancasila->id],
 
-            // Juan: PDPL, RPL, Web Dasar, Kecerdasan Mesin, Strategi Algoritmik, Pancasila
-            [$juan->student->id, $pdpl->id],
+            // Juan: RPL, Web Dasar, Kecerdasan Mesin, Strategi Algoritmik, Pancasila
             [$juan->student->id, $rpl->id],
             [$juan->student->id, $webDasar->id],
             [$juan->student->id, $kecerdasanMesin->id],
             [$juan->student->id, $stratAlgo->id],
             [$juan->student->id, $pancasila->id],
 
-            // Calvin: PDPL, Proyek PL, Kecerdasan Mesin
-            [$calvin->student->id, $pdpl->id],
+            // Calvin: Proyek PL, Kecerdasan Mesin
             [$calvin->student->id, $proyekPL->id],
             [$calvin->student->id, $kecerdasanMesin->id],
 
@@ -291,9 +295,11 @@ class SmartCampusSeeder extends Seeder
         ];
 
         foreach ($enrollData as [$studentId, $courseId]) {
-            Enrollment::create([
+            // Gunakan firstOrCreate agar tidak error jika terduplikasi saat seeding ulang
+            Enrollment::firstOrCreate([
                 'student_id' => $studentId,
                 'course_id'  => $courseId,
+            ], [
                 'enrolled_at' => now()->subWeeks(8),
                 'status'     => 'active',
                 'verified_by' => $adminId,
@@ -400,25 +406,28 @@ class SmartCampusSeeder extends Seeder
             'created_by' => $maya->id,
         ]);
 
-        // 9. [TESTING] Proyek PL — Tugas Mockup (Deadline H-1 / Besok)
-        // Dibuat khusus untuk mengetes fitur Observer Pattern (Deadline Reminder)
-        if (Assignment::where('title', 'Tugas Testing: Rancangan Mockup UI/UX')->doesntExist()) {
-            $testAssignment = Assignment::create([
-                'course_id' => $proyekPL->id,
-                'title' => 'Tugas Testing: Rancangan Mockup UI/UX',
-                'description' => "Tugas ini diset deadline besok untuk memicu Observer Pattern.",
-                'deadline' => now()->addDay()->setTime(23, 59, 0),
-                'max_score' => 100,
-                'file_format_allowed' => 'pdf,fig,png',
-                'max_file_size_kb' => 10240,
-                'created_by' => $maya->id,
-            ]);
+        // 9. [TESTING DEMO] PDPL — Tugas Evaluasi Design Pattern (Deadline H-1 / Besok)
+        // Dibuat khusus di kelas PDPL agar ke-5 mahasiswa mendapatkan notifikasi secara serentak
+        $demoAssignment = Assignment::firstOrCreate([
+            'title' => 'Tugas 4: Evaluasi Design Pattern (DEMO OBSERVER)',
+            'course_id' => $pdpl->id,
+        ], [
+            'description' => "Tugas ini diset deadline besok secara dinamis menggunakan Carbon::tomorrow() untuk memicu Observer Pattern saat demonstrasi presentasi.",
+            'deadline' => \Carbon\Carbon::tomorrow()->setTime(23, 59, 0), // TEPAT BESOK H-1
+            'max_score' => 100,
+            'file_format_allowed' => 'pdf,zip,png',
+            'max_file_size_kb' => 10240,
+            'created_by' => $budi->id,
+        ]);
 
-        // Buat record submission untuk Dave dengan progress 'not_started' 
-        // agar terdeteksi oleh sistem pengecek deadline
-            Submission::create([
-                'assignment_id' => $testAssignment->id,
-                'student_id'    => $dave->student->id,
+        // Buatkan submission berstatus 'draft' (progress 0) untuk KELIMA mahasiswa
+        // Agar scheduler mendeteksi bahwa mereka belum selesai mengerjakan tugas ini
+        $allStudents = [$francisco, $juan, $calvin, $dave, $andi];
+        foreach ($allStudents as $mhs) {
+            Submission::firstOrCreate([
+                'assignment_id' => $demoAssignment->id,
+                'student_id'    => $mhs->student->id,
+            ], [
                 'status'        => 'draft',
                 'progress'      => 0, 
             ]);
